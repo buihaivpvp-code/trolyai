@@ -3,16 +3,51 @@
  * safely without overriding readonly window.fetch properties.
  */
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/+$/, "");
+
+function resolveApiUrl(input: RequestInfo | URL): string | RequestInfo | URL {
+  if (typeof input !== "string") {
+    return input;
+  }
+
+  if (/^https?:\/\//i.test(input)) {
+    return input;
+  }
+
+  if (!input.startsWith("/")) {
+    return input;
+  }
+
+  if (!API_BASE_URL) {
+    return input;
+  }
+
+  return `${API_BASE_URL}${input}`;
+}
+
+function extractUrl(input: RequestInfo | URL): string {
+  if (typeof input === "string") {
+    return input;
+  }
+
+  if (input instanceof URL) {
+    return input.toString();
+  }
+
+  if (typeof Request !== "undefined" && input instanceof Request) {
+    return input.url;
+  }
+
+  return "";
+}
+
 export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const customKey = localStorage.getItem("custom_gemini_api_key");
   const authToken = localStorage.getItem("auth_token");
-  
-  let isGeminiApi = false;
-  if (typeof input === "string") {
-    isGeminiApi = input.includes("/api/gemini");
-  } else if (input && typeof input === "object" && "url" in input) {
-    isGeminiApi = (input as any).url.includes("/api/gemini");
-  }
+  const resolvedInput = resolveApiUrl(input);
+  const requestUrl = extractUrl(resolvedInput);
+
+  const isGeminiApi = requestUrl.includes("/api/gemini");
 
   let actualInit = init || {};
   const headers = new Headers(actualInit.headers || {});
@@ -30,5 +65,5 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     headers
   };
 
-  return fetch(input, actualInit);
+  return fetch(resolvedInput, actualInit);
 }

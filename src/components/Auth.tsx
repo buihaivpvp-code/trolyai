@@ -69,10 +69,43 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
         body: JSON.stringify(body)
       });
 
-      const data = await response.json();
+      let data: any = null;
+      const contentType = response.headers.get("content-type") || "";
+
+      const buildInvalidResponseError = (rawText: string) => {
+        console.error("Auth invalid response:", rawText);
+
+        const normalizedText = rawText.trim();
+        const preview = normalizedText.slice(0, 120);
+        const isHtmlLike =
+          normalizedText.startsWith("<") ||
+          /<!DOCTYPE/i.test(rawText) ||
+          /<html/i.test(rawText) ||
+          /trang/i.test(preview) ||
+          /page/i.test(preview);
+
+        return new Error(
+          isHtmlLike
+            ? "Máy chủ đang trả về trang web thay vì API đăng nhập. Vui lòng kiểm tra cấu hình VITE_API_BASE_URL, tên miền backend hoặc proxy /api."
+            : `Máy chủ trả về dữ liệu không hợp lệ: ${preview || "Phản hồi rỗng"}`
+        );
+      };
+
+      if (contentType.includes("application/json")) {
+        const rawText = await response.text();
+
+        try {
+          data = rawText ? JSON.parse(rawText) : null;
+        } catch {
+          throw buildInvalidResponseError(rawText);
+        }
+      } else {
+        const text = await response.text();
+        throw buildInvalidResponseError(text);
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || "Có lỗi xảy ra, vui lòng thử lại.");
+        throw new Error(data?.error || data?.message || "Có lỗi xảy ra, vui lòng thử lại.");
       }
 
       if (mode === "register") {

@@ -69,7 +69,7 @@ const renderExtractedText = (text: string, zoomPercent: number) => {
         // Bullet points like - or + or *
         if (trimmed.startsWith("-") || trimmed.startsWith("•") || trimmed.startsWith("+")) {
           return (
-            <div key={idx} className="pl-4 flex items-start gap-1.5 text-slate-650">
+            <div key={idx} className="pl-4 flex items-start gap-1.5 text-slate-700">
               <span className="text-indigo-500 mt-1 select-none font-bold">•</span>
               <span>{trimmed.substring(1).trim()}</span>
             </div>
@@ -80,7 +80,7 @@ const renderExtractedText = (text: string, zoomPercent: number) => {
         if (trimmed.includes("[ ]") || trimmed.includes("[v]") || trimmed.includes("[x]")) {
           return (
             <div key={idx} className="pl-6 flex items-center gap-2 text-slate-700 bg-slate-50/50 p-1.5 rounded-lg border border-slate-100/50 my-1">
-              <input type="checkbox" readOnly className="rounded border-slate-350 text-indigo-600 w-3.5 h-3.5 pointer-events-none" />
+              <input type="checkbox" readOnly className="rounded border-slate-300 text-indigo-600 w-3.5 h-3.5 pointer-events-none" />
               <span>{trimmed.replace(/\[\s*v?\s*x?\s*\]/gi, "").trim()}</span>
             </div>
           );
@@ -88,7 +88,7 @@ const renderExtractedText = (text: string, zoomPercent: number) => {
         
         // Default text paragraph
         return (
-          <p key={idx} className="text-slate-650 text-justify leading-relaxed">
+          <p key={idx} className="text-slate-700 text-justify leading-relaxed">
             {trimmed}
           </p>
         );
@@ -1954,7 +1954,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
   return (
     <div className="space-y-6" id="document-repository-container">
       {/* 1. Header Hero section */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-3xs relative overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none" />
         <div className="space-y-1">
           <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
@@ -1970,7 +1970,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
           <button
             id="btn-load-samples"
             onClick={handleLoadSamples}
-            className="text-xs font-bold bg-indigo-50 hover:bg-indigo-100/80 border border-indigo-100 text-indigo-700 px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 shrink-0 shadow-3xs cursor-pointer"
+            className="text-xs font-bold bg-indigo-50 hover:bg-indigo-100/80 border border-indigo-100 text-indigo-700 px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 shrink-0 shadow-sm cursor-pointer"
           >
             <Sparkles className="w-3.5 h-3.5" />
             Nạp tài liệu mẫu dùng thử
@@ -2015,7 +2015,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
             <div 
               key={idx} 
               id={stat.id}
-              className="bg-white p-4 rounded-xl border border-slate-200/80 flex items-center gap-4 shadow-3xs"
+              className="bg-white p-4 rounded-xl border border-slate-200/80 flex items-center gap-4 shadow-sm"
             >
               <div className={`p-2.5 rounded-lg ${stat.color}`}>
                 <Icon className="w-5 h-5" />
@@ -2033,7 +2033,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
         
         {/* LEFT WORKSPACE PANEL: File Upload & Classification */}
-        <div className="xl:col-span-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-3xs space-y-5" id="upload-panel">
+        <div className="xl:col-span-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-5" id="upload-panel">
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Tải Tài Liệu Lên Kho</h3>
@@ -2057,7 +2057,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
               }}
               className={`flex-1 text-center py-1.5 text-xs font-bold rounded-lg transition-all ${
                 uploadMode === "single"
-                  ? "bg-white text-slate-800 shadow-3xs"
+                  ? "bg-white text-slate-800 shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
               }`}
             >
@@ -2073,7 +2073,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
               }}
               className={`flex-1 text-center py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
                 uploadMode === "bulk"
-                  ? "bg-white text-indigo-600 shadow-3xs"
+                  ? "bg-white text-indigo-600 shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
               }`}
             >
@@ -2097,7 +2097,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                     ? "border-indigo-500 bg-indigo-50/50" 
                     : selectedFile 
                       ? "border-emerald-300 bg-emerald-50/10 hover:border-emerald-400" 
-                      : "border-slate-250 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-350"
+                      : "border-slate-200 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-300"
                 }`}
               >
                 <input 
@@ -2139,7 +2139,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                     </div>
                     <div className="space-y-1">
                       <span className="text-xs font-bold text-slate-700 block">Kéo thả tệp tin vào đây</span>
-                      <span className="text-[11px] text-slate-450 block">Hoặc click để duyệt tệp tin (.docx, .txt, ...)</span>
+                      <span className="text-[11px] text-slate-500 block">Hoặc click để duyệt tệp tin (.docx, .txt, ...)</span>
                     </div>
                     <span className="text-[9px] text-slate-400 block max-w-[200px] leading-tight">
                       Hỗ trợ: PDF, Word, PowerPoint, Excel, Hình ảnh, Văn bản hoặc Video (Tối đa 50MB)
@@ -2150,15 +2150,15 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
 
               {/* AI WORD DOCUMENT ANALYSIS STATUS */}
               {isAnalyzing && (
-                <div className="bg-indigo-50 border border-indigo-150 p-3 rounded-xl flex items-center gap-2.5 text-xs text-indigo-750 font-semibold animate-pulse" id="ai-analyzing-status">
+                <div className="bg-indigo-50 border border-indigo-200 p-3 rounded-xl flex items-center gap-2.5 text-xs text-indigo-700 font-semibold animate-pulse" id="ai-analyzing-status">
                   <Sparkles className="w-4 h-4 text-indigo-600 animate-spin shrink-0" />
                   <span className="leading-tight text-left">Trợ lý AI đang quét giáo án toàn diện và tóm tắt học thuật...</span>
                 </div>
               )}
 
               {analysisResult && (
-                <div className="bg-emerald-50 border border-emerald-100 p-3 rounded-xl space-y-1.5 text-left animate-fade-in" id="ai-analysis-success">
-                  <div className="flex items-center gap-1.5 text-xs text-emerald-850 font-extrabold">
+                <div className="bg-emerald-50 border border-emerald-100 p-3 rounded-xl space-y-1.5 text-left" id="ai-analysis-success">
+                  <div className="flex items-center gap-1.5 text-xs text-emerald-900 font-extrabold">
                     <Sparkles className="w-4 h-4 text-emerald-600 animate-bounce" />
                     <span>Đọc & phân tích tệp thành công!</span>
                   </div>
@@ -2169,8 +2169,8 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
               )}
 
               {analysisError && (
-                <div className="bg-amber-55 border border-amber-100 p-3 rounded-xl flex items-center gap-2 text-xs text-amber-850 font-medium" id="ai-analysis-error">
-                  <AlertCircle className="w-4 h-4 text-amber-650 shrink-0" />
+                <div className="bg-amber-50 border border-amber-100 p-3 rounded-xl flex items-center gap-2 text-xs text-amber-900 font-medium" id="ai-analysis-error">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
                   <span className="text-left leading-tight">{analysisError}</span>
                 </div>
               )}
@@ -2187,7 +2187,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                     placeholder="Nhập tên tài liệu lưu trữ..."
                     value={docName}
                     onChange={(e) => setDocName(e.target.value)}
-                    className="w-full bg-white border border-slate-200 text-xs rounded-lg px-3 py-2 font-medium text-slate-700 shadow-3xs focus:outline-hidden focus:border-indigo-500"
+                    className="w-full bg-white border border-slate-200 text-xs rounded-lg px-3 py-2 font-medium text-slate-700 shadow-sm focus:outline-hidden focus:border-indigo-500"
                   />
                 </div>
 
@@ -2217,7 +2217,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                     placeholder="Ví dụ: Bài 12: Biểu thức có chứa chữ..."
                     value={docLessonTopic}
                     onChange={(e) => setDocLessonTopic(e.target.value)}
-                    className="w-full bg-white border border-slate-200 text-xs rounded-lg px-3 py-2 font-medium text-slate-700 shadow-3xs focus:outline-hidden focus:border-indigo-500"
+                    className="w-full bg-white border border-slate-200 text-xs rounded-lg px-3 py-2 font-medium text-slate-700 shadow-sm focus:outline-hidden focus:border-indigo-500"
                   />
                 </div>
 
@@ -2260,7 +2260,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                     <select
                       value={docGrade}
                       onChange={(e) => setDocGrade(e.target.value)}
-                      className="w-full bg-white border border-slate-200 text-xs rounded-lg px-2.5 py-1.5 font-medium text-slate-700 shadow-3xs focus:outline-hidden focus:border-indigo-500"
+                      className="w-full bg-white border border-slate-200 text-xs rounded-lg px-2.5 py-1.5 font-medium text-slate-700 shadow-sm focus:outline-hidden focus:border-indigo-500"
                     >
                       {grades.map(g => (
                         <option key={g} value={g}>{g}</option>
@@ -2277,7 +2277,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                     <select
                       value={docSubject}
                       onChange={(e) => setDocSubject(e.target.value)}
-                      className="w-full bg-white border border-slate-200 text-xs rounded-lg px-2.5 py-1.5 font-medium text-slate-700 shadow-3xs focus:outline-hidden focus:border-indigo-500"
+                      className="w-full bg-white border border-slate-200 text-xs rounded-lg px-2.5 py-1.5 font-medium text-slate-700 shadow-sm focus:outline-hidden focus:border-indigo-500"
                     >
                       {subjects.map(s => (
                         <option key={s} value={s}>{s}</option>
@@ -2291,12 +2291,12 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
 
                 {/* Conditional options for Textbook sets */}
                 {docCategory === "Sách giáo khoa" && (
-                  <div className="space-y-1 animate-fade-in">
+                  <div className="space-y-1">
                     <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider block">Bộ sách giáo khoa</label>
                     <select
                       value={docBookSeries}
                       onChange={(e) => setDocBookSeries(e.target.value)}
-                      className="w-full bg-white border border-slate-200 text-xs rounded-lg px-2.5 py-1.5 font-medium text-slate-700 shadow-3xs focus:outline-hidden focus:border-indigo-500"
+                      className="w-full bg-white border border-slate-200 text-xs rounded-lg px-2.5 py-1.5 font-medium text-slate-700 shadow-sm focus:outline-hidden focus:border-indigo-500"
                     >
                       {bookSeriesList.map(b => (
                         <option key={b} value={b}>{b}</option>
@@ -2307,12 +2307,12 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
 
                 {/* Conditional options for Reference Materials Group */}
                 {docCategory === "Tài liệu tham khảo" && (
-                  <div className="space-y-1 animate-fade-in">
+                  <div className="space-y-1">
                     <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider block">Nhóm tài liệu tham khảo</label>
                     <select
                       value={docRefGroup}
                       onChange={(e) => setDocRefGroup(e.target.value)}
-                      className="w-full bg-white border border-slate-200 text-xs rounded-lg px-2.5 py-1.5 font-medium text-slate-700 shadow-3xs focus:outline-hidden focus:border-indigo-500"
+                      className="w-full bg-white border border-slate-200 text-xs rounded-lg px-2.5 py-1.5 font-medium text-slate-700 shadow-sm focus:outline-hidden focus:border-indigo-500"
                     >
                       {refGroups.map(r => (
                         <option key={r} value={r}>{r}</option>
@@ -2323,7 +2323,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
 
                 {/* Custom notes or curriculum context - Replaced with beautiful AI Summary display block */}
                 {(docNotes || analysisResult) ? (
-                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5 text-left animate-fade-in" id="ai-summary-display-block">
+                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5 text-left" id="ai-summary-display-block">
                     <div className="flex items-center gap-1.5 text-[10px] text-indigo-700 font-extrabold uppercase tracking-wider">
                       <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
                       <span>AI Tổng Quan & Mục Tiêu Bài Học</span>
@@ -2355,7 +2355,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                     <div className="flex justify-center text-slate-400">
                       <Sparkles className="w-5 h-5" />
                     </div>
-                    <span className="text-[10px] font-bold text-slate-450 uppercase block tracking-wider">AI Phân Tích Tự Động</span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase block tracking-wider">AI Phân Tích Tự Động</span>
                     <p className="text-[10px] text-slate-400 leading-normal px-2">
                       Nội dung bài học nhận diện và mục tiêu sẽ tự động hiển thị tại đây sau khi AI phân tích tệp tin hoặc văn bản dán ở trên.
                     </p>
@@ -2398,7 +2398,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                 id="btn-submit-document"
                 type="submit"
                 disabled={isUploading || !selectedFile}
-                className="w-full h-10 bg-slate-900 border border-slate-800 hover:bg-slate-850 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-10 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Plus className="w-4 h-4" />
                 Lưu Vào Kho Lưu Trữ
@@ -2419,7 +2419,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                     ? "border-indigo-500 bg-indigo-50/50" 
                     : selectedBulkFiles.length > 0 
                       ? "border-emerald-300 bg-emerald-50/5 hover:border-emerald-400" 
-                      : "border-slate-250 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-350"
+                      : "border-slate-200 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-300"
                 }`}
               >
                 <input 
@@ -2431,12 +2431,12 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                   multiple
                 />
 
-                <div className="p-2.5 bg-indigo-50 rounded-full text-indigo-650">
+                <div className="p-2.5 bg-indigo-50 rounded-full text-indigo-700">
                   <Upload className="w-5 h-5 text-indigo-500" />
                 </div>
                 <div className="space-y-0.5">
                   <span className="text-xs font-bold text-slate-700 block">Kéo thả nhiều tệp tin vào đây</span>
-                  <span className="text-[11px] text-slate-450 block">Hoặc click để chọn nhiều tệp giáo án cùng lúc</span>
+                  <span className="text-[11px] text-slate-500 block">Hoặc click để chọn nhiều tệp giáo án cùng lúc</span>
                 </div>
                 <span className="text-[9px] text-slate-400 block max-w-[220px] leading-tight">
                   Hỗ trợ tải toàn bộ giáo án của 1 học kỳ hoặc cả năm học (.docx, .pdf, .txt...)
@@ -2445,7 +2445,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
 
               {/* LIST OF SELECTED BULK FILES */}
               {selectedBulkFiles.length > 0 && (
-                <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/50 max-h-[220px] overflow-y-auto divide-y divide-slate-150 text-left animate-fade-in" id="bulk-files-list">
+                <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/50 max-h-[220px] overflow-y-auto divide-y divide-slate-200 text-left" id="bulk-files-list">
                   <div className="bg-slate-100 px-3 py-1.5 flex justify-between items-center">
                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Danh sách tệp chuẩn bị tải ({selectedBulkFiles.length})</span>
                     <button
@@ -2485,8 +2485,8 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                             </span>
                           )}
                           {status === "uploading" && (
-                            <span className="text-[10px] bg-indigo-50 text-indigo-750 font-bold px-1.5 py-0.5 rounded flex items-center gap-1 animate-pulse">
-                              <div className="w-1.5 h-1.5 bg-indigo-655 rounded-full animate-ping mr-0.5 inline-block" /> Tải lên...
+                            <span className="text-[10px] bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.5 rounded flex items-center gap-1 animate-pulse">
+                              <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-ping mr-0.5 inline-block" /> Tải lên...
                             </span>
                           )}
                           {status === "analyzing" && (
@@ -2501,7 +2501,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                           )}
                           {status === "error" && (
                             <span className="text-[10px] bg-rose-50 text-rose-700 font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
-                              <AlertCircle className="w-2.5 h-2.5 text-rose-605 mr-0.5 inline-block" /> Lỗi
+                              <AlertCircle className="w-2.5 h-2.5 text-rose-600 mr-0.5 inline-block" /> Lỗi
                             </span>
                           )}
                           
@@ -2600,7 +2600,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
 
                 {/* Conditional options for Textbook sets */}
                 {docCategory === "Sách giáo khoa" && (
-                  <div className="space-y-1 animate-fade-in">
+                  <div className="space-y-1">
                     <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider block">Bộ sách giáo khoa</label>
                     <select
                       value={docBookSeries}
@@ -2616,7 +2616,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
 
                 {/* Conditional options for Reference Materials Group */}
                 {docCategory === "Tài liệu tham khảo" && (
-                  <div className="space-y-1 animate-fade-in">
+                  <div className="space-y-1">
                     <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider block">Nhóm tài liệu tham khảo</label>
                     <select
                       value={docRefGroup}
@@ -2674,7 +2674,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                 id="btn-submit-bulk-document"
                 type="submit"
                 disabled={isUploading || selectedBulkFiles.length === 0}
-                className="w-full h-10 bg-indigo-600 hover:bg-indigo-750 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-10 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Layers className="w-4 h-4" />
                 Lưu Hàng Loạt Vào Kho ({selectedBulkFiles.length})
@@ -2687,7 +2687,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
         <div className="xl:col-span-8 space-y-4" id="documents-list-panel">
           
           {/* SEARCH AND FILTERS BAR */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-3xs space-y-3 text-left">
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3 text-left">
             
             {/* Row 1: Search & View modes */}
             <div className="flex flex-col sm:flex-row gap-3">
@@ -2704,7 +2704,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
               </div>
 
               {/* Category buttons tab bar */}
-              <div className="flex gap-1 bg-slate-150 p-1 rounded-xl self-start sm:self-auto shrink-0">
+              <div className="flex gap-1 bg-slate-100 p-1 rounded-xl self-start sm:self-auto shrink-0">
                 {[
                   { label: "Tất cả", val: "All" },
                   { label: "Giáo án", val: "Giáo án" },
@@ -2724,7 +2724,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                     }}
                     className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                       activeCategory === cat.val 
-                        ? "bg-white text-slate-800 shadow-3xs" 
+                        ? "bg-white text-slate-800 shadow-sm"
                         : "text-slate-500 hover:text-slate-800"
                     }`}
                   >
@@ -2826,7 +2826,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
           {/* LISTING CONTAINER */}
           {filteredDocs.length === 0 ? (
             /* EMPTY STATE - REINFORCING DESKTOP PRECISION AESTHETIC */
-            <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center flex flex-col items-center justify-center space-y-4 shadow-3xs" id="repo-empty-state">
+            <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center flex flex-col items-center justify-center space-y-4 shadow-sm" id="repo-empty-state">
               <div className="p-4 bg-slate-50 rounded-full border border-dashed border-slate-200 relative">
                 <Folder className="w-10 h-10 text-slate-300" />
                 <Upload className="w-4 h-4 text-slate-400 absolute right-3 bottom-3" />
@@ -2845,7 +2845,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                 <button
                   id="btn-empty-load-samples"
                   onClick={handleLoadSamples}
-                  className="text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 shadow-3xs cursor-pointer"
+                  className="text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5 animate-pulse" />
                   Nạp tài liệu mẫu để kiểm tra tính năng
@@ -2875,7 +2875,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                       onMouseEnter={(e) => handleMouseEnterDoc(doc, e)}
                       onMouseMove={handleMouseMoveDoc}
                       onMouseLeave={handleMouseLeaveDoc}
-                      className="bg-white p-4 rounded-xl border border-slate-200 hover:border-indigo-300 transition-all cursor-pointer flex flex-col justify-between text-left relative group shadow-3xs"
+                      className="bg-white p-4 rounded-xl border border-slate-200 hover:border-indigo-300 transition-all cursor-pointer flex flex-col justify-between text-left relative group shadow-sm"
                     >
                       {/* Top content row */}
                       <div className="space-y-3">
@@ -2913,7 +2913,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
 
                          {/* Conditional metadata details */}
                         {(doc.bookSeries || doc.refGroup) && (
-                          <div className="text-[10px] bg-slate-50 p-1.5 rounded-lg border border-slate-150/60 text-slate-500 font-medium truncate">
+                          <div className="text-[10px] bg-slate-50 p-1.5 rounded-lg border border-slate-200 text-slate-500 font-medium truncate">
                             {doc.bookSeries && `Bộ sách: ${doc.bookSeries}`}
                             {doc.refGroup && `Phân nhóm: ${doc.refGroup}`}
                           </div>
@@ -3074,7 +3074,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
             >
               
               {/* Drawer Header */}
-              <div className="p-4 border-b border-slate-150 flex justify-between items-center bg-slate-900 text-white">
+              <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-900 text-white">
                 <div className="flex items-center gap-2">
                   <FileText className="w-4 h-4 text-indigo-400" />
                   <span className="text-xs font-black uppercase tracking-wider">Xem nhanh thông tin tài liệu</span>
@@ -3092,7 +3092,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
               <div className="flex-1 overflow-y-auto flex flex-col min-h-0 bg-slate-50">
                 
                 {/* Header Information Card */}
-                <div className="bg-white p-5 border-b border-slate-150 space-y-3 shrink-0">
+                <div className="bg-white p-5 border-b border-slate-200 space-y-3 shrink-0">
                   <div className="flex gap-3.5 items-start">
                     <div className="shrink-0 mt-0.5">
                       {getFormatIcon(previewDoc.fileExtension)}
@@ -3127,7 +3127,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                 </div>
 
                 {/* Sub-navigation Tabs */}
-                <div className="bg-white border-b border-slate-150 px-4 flex gap-1 shrink-0">
+                <div className="bg-white border-b border-slate-200 px-4 flex gap-1 shrink-0">
                   <button
                     id="tab-preview-content"
                     onClick={() => setPreviewTab("content")}
@@ -3222,7 +3222,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                             </div>
 
                             {/* Clickable interactive chapters */}
-                            <div className="bg-white rounded-xl border border-slate-150 p-4 space-y-2.5 shadow-3xs">
+                            <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-2.5 shadow-sm">
                               <h4 className="text-[10px] font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-slate-100">
                                 <Info className="w-3.5 h-3.5 text-indigo-500" />
                                 Điều khiển tiến trình quan sát
@@ -3359,28 +3359,28 @@ Ghi chú đính kèm của thầy cô:
                         className="space-y-4"
                       >
                         {/* Summary Layout */}
-                        <div className="bg-white p-4.5 rounded-xl border border-slate-150 shadow-3xs space-y-3.5 text-xs text-slate-700">
+                        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3.5 text-xs text-slate-700">
                           <h4 className="text-[11px] font-extrabold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-1.5 flex items-center gap-1">
                             <Info className="w-3.5 h-3.5 text-indigo-500" />
                             Thông số kỹ thuật & Sư phạm
                           </h4>
                           <div className="space-y-2.5">
                             <div className="flex justify-between items-center">
-                              <span className="text-slate-450 font-medium">Tiêu chuẩn chương trình:</span>
+                              <span className="text-slate-500 font-medium">Tiêu chuẩn chương trình:</span>
                               <span className="font-bold text-slate-800">Thông tư 32/2018/TT-BGDĐT</span>
                             </div>
                             <div className="flex justify-between items-center">
-                              <span className="text-slate-450 font-medium">Dung lượng lưu trữ:</span>
+                              <span className="text-slate-500 font-medium">Dung lượng lưu trữ:</span>
                               <span className="font-bold text-slate-800 font-mono">{previewDoc.fileSize}</span>
                             </div>
                             <div className="flex justify-between items-center">
-                              <span className="text-slate-450 font-medium">Định dạng file:</span>
+                              <span className="text-slate-500 font-medium">Định dạng file:</span>
                               <span className="font-bold text-slate-800 font-mono uppercase bg-slate-100 px-1.5 py-0.5 rounded text-[10px]">
                                 {previewDoc.fileExtension.substring(1)}
                               </span>
                             </div>
                             <div className="flex justify-between items-center">
-                              <span className="text-slate-450 font-medium">Ngày đồng bộ kho:</span>
+                              <span className="text-slate-500 font-medium">Ngày đồng bộ kho:</span>
                               <span className="font-bold text-slate-800 font-mono">{previewDoc.uploadDate}</span>
                             </div>
                             {previewDoc.notes && (
@@ -3395,7 +3395,7 @@ Ghi chú đính kèm của thầy cô:
                         </div>
 
                         {/* AI Analysis Block */}
-                        <div className="bg-indigo-50/50 border border-indigo-100 p-4.5 rounded-xl space-y-4 text-xs text-slate-700 shadow-3xs">
+                        <div className="bg-indigo-50/50 border border-indigo-100 p-4 rounded-xl space-y-4 text-xs text-slate-700 shadow-sm">
                           <h4 className="text-[11px] font-extrabold text-indigo-800 uppercase tracking-wider flex items-center gap-1.5 border-b border-indigo-100/60 pb-1.5">
                             <Sparkles className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
                             Phát hiện cốt lõi sư phạm bằng Trí tuệ AI
@@ -3409,7 +3409,7 @@ Ghi chú đính kèm của thầy cô:
                               </div>
                               <span className="text-[9px] font-extrabold uppercase tracking-widest text-indigo-200 block">Nội dung giảng dạy chính</span>
                               <div className="text-sm font-black flex items-center gap-2">
-                                <Sparkles className="w-4 h-4 shrink-0 text-amber-350 animate-pulse" />
+                                <Sparkles className="w-4 h-4 shrink-0 text-amber-300 animate-pulse" />
                                 <span>DẠY BÀI: {previewDoc.lessonTopic || "Đang phân tích / Chưa xác định"}</span>
                               </div>
                             </div>
@@ -3435,7 +3435,7 @@ Ghi chú đính kèm của thầy cô:
                                 <span className="font-extrabold text-indigo-950 block">Mục tiêu năng lực cốt lõi:</span>
                                 <ul className="space-y-1.5">
                                   {previewDoc.aiObjectives.map((obj, i) => (
-                                    <li key={i} className="flex gap-2 items-start text-slate-650 leading-relaxed pl-1">
+                                    <li key={i} className="flex gap-2 items-start text-slate-700 leading-relaxed pl-1">
                                       <span className="text-indigo-500 font-bold mt-0.5">•</span>
                                       <span>{obj}</span>
                                     </li>
@@ -3473,7 +3473,7 @@ Ghi chú đính kèm của thầy cô:
                   onClick={(e) => {
                     handleDownload(previewDoc, e);
                   }}
-                  className="flex-1 h-10 bg-slate-900 border border-slate-800 hover:bg-slate-850 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-xs"
+                  className="flex-1 h-10 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-sm"
                 >
                   <Download className="w-4 h-4" />
                   Tải Xuống Tệp Tin Gốc
@@ -3483,7 +3483,7 @@ Ghi chú đính kèm của thầy cô:
                   onClick={(e) => {
                     handleDelete(previewDoc.id, e);
                   }}
-                  className="h-10 px-3 bg-rose-50 border border-rose-100 text-rose-700 hover:bg-rose-100 font-bold text-xs rounded-xl flex items-center justify-center cursor-pointer transition-all shadow-xs"
+                  className="h-10 px-3 bg-rose-50 border border-rose-100 text-rose-700 hover:bg-rose-100 font-bold text-xs rounded-xl flex items-center justify-center cursor-pointer transition-all shadow-sm"
                   title="Xóa tài liệu khỏi hệ thống"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -3561,7 +3561,7 @@ Ghi chú đính kèm của thầy cô:
       {/* Elegant Custom Confirmation Modal for document deletion without window.confirm */}
       <AnimatePresence>
         {deleteTarget && (
-          <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-xs flex items-center justify-center p-4 z-[9999] animate-fade-in" id="delete-doc-modal">
+          <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]" id="delete-doc-modal">
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -3570,7 +3570,7 @@ Ghi chú đính kèm của thầy cô:
             >
               <div className="flex items-center gap-3 text-rose-600">
                 <div className="bg-rose-50 p-2.5 rounded-full border border-rose-100">
-                  <Trash2 className="w-5 h-5 text-rose-650" />
+                  <Trash2 className="w-5 h-5 text-rose-600" />
                 </div>
                 <h3 className="text-base font-bold text-slate-900">Xác nhận xóa tài liệu?</h3>
               </div>

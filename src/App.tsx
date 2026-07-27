@@ -430,7 +430,7 @@ export default function App() {
             <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-1 flex items-center gap-2">
               Trợ lý AI cho giáo viên Tiểu học
             </h1>
-            <p className="text-xs text-slate-350 max-w-2xl leading-relaxed mt-1">
+            <p className="text-xs text-slate-300 max-w-2xl leading-relaxed mt-1">
               Giáo dục là không ngừng đổi mới
             </p>
           </div>
@@ -459,13 +459,13 @@ export default function App() {
               )}
               <div className="flex flex-col items-end">
                 <span className="text-xs font-bold text-white block group-hover:text-indigo-200 transition-colors">Thầy Cô: {user.name}</span>
-                <span className="text-[10px] text-slate-350 font-semibold">Chủ nhiệm: Lớp {user.classCode}</span>
+                <span className="text-[10px] text-slate-300 font-semibold">Chủ nhiệm: Lớp {user.classCode}</span>
               </div>
             </button>
 
             <button
               onClick={() => setShowSettingsModal(true)}
-              className="bg-indigo-950/40 hover:bg-indigo-900/60 text-xs text-indigo-200 border border-indigo-800/40 rounded-xl px-3.5 py-2.5 flex items-center gap-2 transition-all cursor-pointer shadow-xs font-bold"
+              className="bg-indigo-950/40 hover:bg-indigo-900/60 text-xs text-indigo-200 border border-indigo-800/40 rounded-xl px-3.5 py-2.5 flex items-center gap-2 transition-all cursor-pointer shadow-sm font-bold"
               title="Mở cài đặt tài khoản và hệ thống"
             >
               <Settings className="w-3.5 h-3.5 text-sky-400" />
@@ -474,7 +474,7 @@ export default function App() {
 
             <button
               onClick={handleLogout}
-              className="bg-rose-950/40 hover:bg-rose-900/60 text-xs text-rose-300 border border-rose-800/40 rounded-xl px-3.5 py-2.5 flex items-center gap-2 transition-all cursor-pointer shadow-xs font-bold"
+              className="bg-rose-950/40 hover:bg-rose-900/60 text-xs text-rose-300 border border-rose-800/40 rounded-xl px-3.5 py-2.5 flex items-center gap-2 transition-all cursor-pointer shadow-sm font-bold"
               title="Đăng xuất tài khoản"
             >
               <LogOut className="w-3.5 h-3.5 text-rose-400" />
@@ -485,7 +485,7 @@ export default function App() {
       </header>
 
       {/* 3. NAVIGATION TABS ROW */}
-      <nav className="bg-white border-b border-slate-200/80 sticky top-0 z-40 shadow-xs">
+      <nav className="bg-white border-b border-slate-200/80 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex scrollbar-none overflow-x-auto gap-1 py-2">
             
@@ -495,7 +495,7 @@ export default function App() {
               onClick={() => setActiveTab("manager")}
               className={`py-2 px-3.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
                 activeTab === "manager"
-                  ? "bg-slate-900 text-white shadow-xs"
+                  ? "bg-slate-900 text-white shadow-sm"
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
@@ -509,7 +509,7 @@ export default function App() {
               onClick={() => setActiveTab("repository")}
               className={`py-2 px-3.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
                 activeTab === "repository"
-                  ? "bg-slate-900 text-white shadow-xs"
+                  ? "bg-slate-900 text-white shadow-sm"
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
@@ -523,7 +523,7 @@ export default function App() {
               onClick={() => setActiveTab("slides")}
               className={`py-2 px-3.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
                 activeTab === "slides"
-                  ? "bg-slate-900 text-white shadow-xs"
+                  ? "bg-slate-900 text-white shadow-sm"
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
@@ -537,7 +537,7 @@ export default function App() {
               onClick={() => setActiveTab("tests")}
               className={`py-2 px-3.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
                 activeTab === "tests"
-                  ? "bg-slate-900 text-white shadow-xs"
+                  ? "bg-slate-900 text-white shadow-sm"
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
@@ -551,7 +551,7 @@ export default function App() {
               onClick={() => setActiveTab("classroom_games")}
               className={`py-2 px-3.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
                 activeTab === "classroom_games"
-                  ? "bg-slate-900 text-white shadow-xs"
+                  ? "bg-slate-900 text-white shadow-sm"
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
@@ -565,7 +565,7 @@ export default function App() {
               onClick={() => setActiveTab("journal")}
               className={`py-2 px-3.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
                 activeTab === "journal"
-                  ? "bg-slate-900 text-white shadow-xs"
+                  ? "bg-slate-900 text-white shadow-sm"
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
@@ -617,8 +617,8 @@ export default function App() {
 
       {/* API Key Modal */}
       {showApiKeyModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4" id="api-key-modal-overlay">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200" id="api-key-modal-content">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" id="api-key-modal-overlay">
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 overflow-hidden" id="api-key-modal-content">
             <div className="bg-slate-900 px-6 py-4 flex justify-between items-center text-white">
               <div className="flex items-center gap-2">
                 <Key className="w-5 h-5 text-amber-500" />
@@ -637,7 +637,7 @@ export default function App() {
                 Hệ thống EduAI đang sử dụng dịch vụ Google Gemini AI để hỗ trợ giáo án, ra đề thi, soạn slide và nhận xét học sinh. Nếu thầy cô gặp tình trạng quá tải (hết lượt sử dụng miễn phí hằng ngày), thầy cô có thể tự thêm <strong>khóa API cá nhân</strong> để sử dụng không giới hạn.
               </p>
 
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[11px] text-amber-850 space-y-1">
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[11px] text-amber-900 space-y-1">
                 <p className="font-bold">💡 Hướng dẫn lấy khóa API miễn phí:</p>
                 <ol className="list-decimal pl-4 space-y-0.5">
                   <li>Truy cập trang <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" className="underline font-semibold hover:text-amber-900">Google AI Studio</a>.</li>
@@ -689,13 +689,13 @@ export default function App() {
                   <button
                     onClick={handleTestKey}
                     disabled={testStatus === "testing"}
-                    className="px-3.5 py-2 bg-slate-150 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50 border-none"
+                    className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50 border-none"
                   >
                     {testStatus === "testing" ? "Đang kiểm tra..." : "Kiểm tra kết nối"}
                   </button>
                     <button
                       onClick={handleSaveKey}
-                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs border-none"
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm border-none"
                     >
                       Lưu cấu hình
                     </button>
@@ -708,7 +708,7 @@ export default function App() {
 
       {/* Settings Modal */}
       {showSettingsModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto animate-fade-in" id="modal-settings">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto" id="modal-settings">
           <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full border border-slate-100 overflow-hidden">
             <div className="bg-slate-900 px-6 py-4 flex items-center justify-between text-white">
               <div className="flex items-center gap-2">
@@ -858,7 +858,7 @@ export default function App() {
                             setShowSettingsModal(false);
                             setShowApiKeyModal(true);
                           }}
-                          className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs border-none"
+                          className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm border-none"
                         >
                           Mở phần cài đặt API
                         </button>
@@ -920,7 +920,7 @@ export default function App() {
 
       {/* 5. TEACHER PROFILE MODAL */}
       {showTeacherModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto animate-fade-in" id="modal-teacher-profile">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto" id="modal-teacher-profile">
           <div className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full border border-slate-100 overflow-hidden flex flex-col md:flex-row max-h-[90vh]">
             
             {/* Left Sidebar Panel - Profile Preview */}

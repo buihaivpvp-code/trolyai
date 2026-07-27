@@ -3,6 +3,7 @@ import path from "path";
 import fs from "fs";
 import { authenticateToken, AuthenticatedRequest } from "../middleware/auth";
 import { Logger } from "../middleware/logger";
+import { R2Storage } from "../services/r2Storage";
 
 const router = Router();
 const UPLOADS_DIR = path.join(process.cwd(), "uploads");
@@ -23,6 +24,26 @@ type DriveScanItem = {
 };
 
 const GOOGLE_HOSTS = ["drive.google.com", "docs.google.com"];
+
+function inferContentType(fileName: string): string {
+  const lower = fileName.toLowerCase();
+
+  if (lower.endsWith(".pdf")) return "application/pdf";
+  if (lower.endsWith(".doc")) return "application/msword";
+  if (lower.endsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  if (lower.endsWith(".docm")) return "application/vnd.ms-word.document.macroEnabled.12";
+  if (lower.endsWith(".xls")) return "application/vnd.ms-excel";
+  if (lower.endsWith(".xlsx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  if (lower.endsWith(".ppt")) return "application/vnd.ms-powerpoint";
+  if (lower.endsWith(".pptx")) return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+  if (lower.endsWith(".txt")) return "text/plain; charset=utf-8";
+  if (lower.endsWith(".json")) return "application/json; charset=utf-8";
+  if (lower.endsWith(".csv")) return "text/csv; charset=utf-8";
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+
+  return "application/octet-stream";
+}
 
 function isGoogleDriveLikeUrl(value: string): boolean {
   try {
@@ -239,7 +260,7 @@ async function scanPublicDriveFile(fileId: string, originalUrl: string): Promise
  * @desc Upload base64 encoded educational documents safely
  * @access Private
  */
-router.post("/upload", authenticateToken as any, (req: AuthenticatedRequest, res: Response, next) => {
+router.post("/upload", authenticateToken as any, async (req: AuthenticatedRequest, res: Response, next) => {
   try {
     const { id, fileName, base64Data } = req.body;
     if (!id || !fileName || !base64Data) {
@@ -256,12 +277,29 @@ router.post("/upload", authenticateToken as any, (req: AuthenticatedRequest, res
     // Save file as UPLOADS_DIR/id_fileName with sanitization to prevent path traversal vulnerability
     const sanitizedName = fileName.replace(/[^a-zA-Z0-9.\-_]/g, "_");
     const safeFileName = `${id}_${sanitizedName}`;
-    const destinationPath = path.join(UPLOADS_DIR, safeFileName);
+    const contentType = inferContentType(sanitizedName);
 
+    if (R2Storage.isEnabled()) {
+      const uploadResult = await R2Storage.uploadDocument({
+        key: safeFileName,
+        body: buffer,
+        contentType,
+      });
+
+      Logger.info(`Uploaded document to Cloudflare R2: ${safeFileName} (${buffer.length} bytes) for user: ${req.user?.email}`);
+      return res.json({
+        success: true,
+        fileName: safeFileName,
+        storage: "r2",
+        url: uploadResult.url || undefined,
+      });
+    }
+
+    const destinationPath = path.join(UPLOADS_DIR, safeFileName);
     fs.writeFileSync(destinationPath, buffer);
 
-    Logger.info(`Saved uploaded document: ${safeFileName} (${buffer.length} bytes) for user: ${req.user?.email}`);
-    res.json({ success: true, fileName: safeFileName });
+    Logger.info(`Saved uploaded document locally: ${safeFileName} (${buffer.length} bytes) for user: ${req.user?.email}`);
+    return res.json({ success: true, fileName: safeFileName, storage: "local" });
   } catch (err) {
     next(err);
   }
@@ -316,22 +354,52 @@ router.post("/scan-drive", authenticateToken as any, async (req: AuthenticatedRe
  * @desc Retrieve and download original file by unique document identifier
  * @access Private
  */
-router.get("/download/:id", authenticateToken as any, (req: AuthenticatedRequest, res: Response, next) => {
+router.get("/download/:id", authenticateToken as any, async (req: AuthenticatedRequest, res: Response, next) => {
   try {
     const { id } = req.params;
+
+    if (R2Storage.isEnabled()) {
+      const localFiles = fs.existsSync(UPLOADS_DIR) ? fs.readdirSync(UPLOADS_DIR) : [];
+      const localMatch = localFiles.find(f => f.startsWith(`${id}_`));
+
+      if (localMatch) {
+        const r2Object = await R2Storage.downloadDocument(localMatch);
+        if (r2Object) {
+          const originalName = localMatch.substring(id.length + 1);
+          Logger.info(`Document download triggered from Cloudflare R2: ${localMatch}`);
+          res.setHeader("Content-Type", r2Object.contentType || inferContentType(originalName));
+          res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(originalName)}"`);
+          return res.send(r2Object.body);
+        }
+      }
+    }
+
     if (!fs.existsSync(UPLOADS_DIR)) {
       return res.status(404).send("File not found");
     }
+
     const files = fs.readdirSync(UPLOADS_DIR);
     const file = files.find(f => f.startsWith(`${id}_`));
     if (!file) {
       return res.status(404).send("File not found");
     }
+
+    if (R2Storage.isEnabled()) {
+      const r2Object = await R2Storage.downloadDocument(file);
+      if (r2Object) {
+        const originalName = file.substring(id.length + 1);
+        Logger.info(`Document download triggered from Cloudflare R2: ${file}`);
+        res.setHeader("Content-Type", r2Object.contentType || inferContentType(originalName));
+        res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(originalName)}"`);
+        return res.send(r2Object.body);
+      }
+    }
+
     const filePath = path.join(UPLOADS_DIR, file);
     const originalName = file.substring(id.length + 1);
 
-    Logger.info(`Document download triggered: ${file}`);
-    res.download(filePath, originalName);
+    Logger.info(`Document download triggered from local storage: ${file}`);
+    return res.download(filePath, originalName);
   } catch (err) {
     next(err);
   }

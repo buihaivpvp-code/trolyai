@@ -2717,6 +2717,10 @@ async function setupFrontend() {
     app.use(vite.middlewares);
 
     app.use("*", async (req, res, next) => {
+      if (req.path.startsWith("/api/")) {
+        return res.status(404).json({ error: "API endpoint không tồn tại." });
+      }
+
       try {
         const indexPath = path.resolve(process.cwd(), "index.html");
         let template = await fs.promises.readFile(indexPath, "utf-8");
