@@ -1,8 +1,0 @@
-{
-  "name": "Trợ lý AI cho giáo viên Tiểu học",
-  "description": "AI Trợ lý Chủ nhiệm & Giảng dạy Toàn diện cho Giáo viên Giáo dục Tiểu học tại Việt Nam",
-  "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
-}

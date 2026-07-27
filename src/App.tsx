@@ -61,7 +61,6 @@ export default function App() {
   const [hasCustomKey, setHasCustomKey] = useState(false);
   const [themeMode, setThemeMode] = useState<"light" | "dark">("light");
   const [fontScale, setFontScale] = useState("Vừa");
-  const [driveLink, setDriveLink] = useState("");
   const [thinkingMode, setThinkingMode] = useState("Cân bằng");
 
   // Teacher Profile Modal States
@@ -171,10 +170,6 @@ export default function App() {
 
   // Avatar upload drag & drop states and handlers
   const [dragOver, setDragOver] = useState(false);
-
-  const getDriveLinkStorageKey = (currentUser?: any | null) => {
-    return currentUser?.id ? `eduai_drive_link_${currentUser.id}` : null;
-  };
 
   const processAvatarFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -355,12 +350,6 @@ export default function App() {
     setTestMessage("");
   };
 
-  const handleSaveDriveLink = () => {
-    const storageKey = getDriveLinkStorageKey(user);
-    if (!storageKey) return;
-    localStorage.setItem(storageKey, driveLink.trim());
-  };
-
   const handleThemeChange = (mode: "light" | "dark") => {
     setThemeMode(mode);
     localStorage.setItem("eduai_theme_mode", mode);
@@ -385,15 +374,6 @@ export default function App() {
     localStorage.removeItem("auth_token");
     setUser(null);
   };
-
-  useEffect(() => {
-    const storageKey = getDriveLinkStorageKey(user);
-    if (!storageKey) {
-      setDriveLink("");
-      return;
-    }
-    setDriveLink(localStorage.getItem(storageKey) || "");
-  }, [user]);
 
   // Check backend health during load (if authenticated)
   useEffect(() => {
@@ -489,7 +469,7 @@ export default function App() {
               title="Mở cài đặt tài khoản và hệ thống"
             >
               <Settings className="w-3.5 h-3.5 text-sky-400" />
-              <span className="hidden md:inline">Setting</span>
+              <span className="hidden md:inline">Cài đặt</span>
             </button>
 
             <button
@@ -576,7 +556,7 @@ export default function App() {
               }`}
             >
               <Award className="w-4 h-4 text-rose-500" />
-              Kiểm Tra Bài Cũ (Game)
+               Kiểm tra bài cũ
             </button>
 
             {/* Tab 9: Sổ đầu bài AI */}
@@ -642,7 +622,7 @@ export default function App() {
             <div className="bg-slate-900 px-6 py-4 flex justify-between items-center text-white">
               <div className="flex items-center gap-2">
                 <Key className="w-5 h-5 text-amber-500" />
-                <h3 className="font-bold text-sm">Cài Đặt API Trí Tuệ Nhân Tạo (Gemini AI)</h3>
+                <h3 className="font-bold text-sm">Cài đặt API trí tuệ nhân tạo (Gemini AI)</h3>
               </div>
               <button
                 onClick={() => { setShowApiKeyModal(false); setTestStatus("idle"); }}
@@ -654,7 +634,7 @@ export default function App() {
 
             <div className="p-6 space-y-4 text-left">
               <p className="text-xs text-slate-600 leading-relaxed">
-                Hệ thống EduAI đang sử dụng dịch vụ Google Gemini AI để hỗ trợ giáo án, ra đề thi, soạn slide và nhận xét học sinh. Nếu thầy cô gặp tình trạng quá tải (hết lượt sử dụng miễn phí hằng ngày), thầy cô có thể tự thêm <strong>Khóa API cá nhân (API Key)</strong> để sử dụng không giới hạn.
+                Hệ thống EduAI đang sử dụng dịch vụ Google Gemini AI để hỗ trợ giáo án, ra đề thi, soạn slide và nhận xét học sinh. Nếu thầy cô gặp tình trạng quá tải (hết lượt sử dụng miễn phí hằng ngày), thầy cô có thể tự thêm <strong>khóa API cá nhân</strong> để sử dụng không giới hạn.
               </p>
 
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[11px] text-amber-850 space-y-1">
@@ -662,7 +642,7 @@ export default function App() {
                 <ol className="list-decimal pl-4 space-y-0.5">
                   <li>Truy cập trang <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" className="underline font-semibold hover:text-amber-900">Google AI Studio</a>.</li>
                   <li>Đăng nhập bằng tài khoản Gmail của thầy cô.</li>
-                  <li>Click vào nút <strong>"Get API key"</strong> màu xanh hoặc <strong>"Create API Key"</strong>.</li>
+                  <li>Nhấn vào nút <strong>"Get API key"</strong> màu xanh hoặc <strong>"Create API Key"</strong>.</li>
                   <li>Sao chép mã khóa (chuỗi ký tự dài bắt đầu bằng <code className="bg-amber-100 px-1 rounded font-mono">AIzaSy...</code>) và dán xuống khung dưới đây.</li>
                 </ol>
               </div>
@@ -672,7 +652,7 @@ export default function App() {
                 <div className="relative">
                   <input
                     type="password"
-                    placeholder="Nhập khóa API của bạn (ví dụ: AIzaSy...)"
+                    placeholder="Nhập khóa API cá nhân (ví dụ: AIzaSy...)"
                     value={customApiKey}
                     onChange={(e) => setCustomApiKey(e.target.value)}
                     className="w-full text-xs px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-slate-800 font-mono"
@@ -711,14 +691,14 @@ export default function App() {
                     disabled={testStatus === "testing"}
                     className="px-3.5 py-2 bg-slate-150 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50 border-none"
                   >
-                    {testStatus === "testing" ? "Đang thử..." : "Kiểm Tra Kết Nối"}
+                    {testStatus === "testing" ? "Đang kiểm tra..." : "Kiểm tra kết nối"}
                   </button>
-                  <button
-                    onClick={handleSaveKey}
-                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs border-none"
-                  >
-                    Lưu Cấu Hình
-                  </button>
+                    <button
+                      onClick={handleSaveKey}
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs border-none"
+                    >
+                      Lưu cấu hình
+                    </button>
                 </div>
               </div>
             </div>
@@ -815,11 +795,11 @@ export default function App() {
                   </div>
 
                   <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
-                    <h5 className="text-xs font-bold text-slate-800">Kết nối Google & lớp quản lý</h5>
+                    <h5 className="text-xs font-bold text-slate-800">Lớp quản lý và trạng thái tài khoản</h5>
                     <div className="space-y-2 text-xs">
                       <div className="flex justify-between gap-4 border-b border-slate-200 pb-2">
-                        <span className="text-slate-500">Google</span>
-                        <span className="font-semibold text-slate-900 text-right">{user.email ? "Đã liên kết theo email đăng nhập" : "Chưa liên kết"}</span>
+                        <span className="text-slate-500">Email đăng nhập</span>
+                        <span className="font-semibold text-slate-900 text-right">{user.email || "Chưa cập nhật"}</span>
                       </div>
                       <div className="flex justify-between gap-4 border-b border-slate-200 pb-2">
                         <span className="text-slate-500">Lớp hiện quản lý</span>
@@ -852,46 +832,6 @@ export default function App() {
                 <div className="grid grid-cols-1 gap-4">
                   <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
                     <div className="flex items-center gap-2">
-                      <Library className="w-4 h-4 text-emerald-600" />
-                      <h5 className="text-xs font-bold text-slate-800">Kho tài liệu</h5>
-                    </div>
-                    <p className="text-slate-600 text-xs leading-relaxed">
-                      Kho tài liệu hoạt động theo tài khoản <span className="font-semibold text-slate-900">{user.name || "giáo viên hiện tại"}</span> và lớp <span className="font-semibold text-slate-900">{user.classCode || "chưa xác định"}</span>, dữ liệu chính lấy từ Google Drive.
-                    </p>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      <div className="space-y-2 text-xs">
-                        <div className="flex justify-between gap-4 border-b border-slate-200 pb-2">
-                          <span className="text-slate-500">Quyền truy cập</span>
-                          <span className="font-semibold text-slate-900 text-right">Theo phiên đăng nhập hiện tại</span>
-                        </div>
-                        <div className="flex justify-between gap-4">
-                          <span className="text-slate-500">Nguồn dữ liệu</span>
-                          <span className="font-semibold text-slate-900 text-right">Google Drive</span>
-                        </div>
-                      </div>
-                      <div className="space-y-3">
-                        <input
-                          type="url"
-                          value={driveLink}
-                          onChange={(e) => setDriveLink(e.target.value)}
-                          placeholder="Dán đường link thư mục hoặc file Google Drive..."
-                          className="w-full text-xs px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800"
-                        />
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-[11px] text-slate-500 leading-relaxed">Liên kết này sẽ được dùng để truy cập nguồn tài liệu từ Drive.</p>
-                          <button
-                            onClick={handleSaveDriveLink}
-                            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer border-none"
-                          >
-                            Lưu link
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
-                    <div className="flex items-center gap-2">
                       <Key className="w-4 h-4 text-amber-600" />
                       <h5 className="text-xs font-bold text-slate-800">Kho API</h5>
                     </div>
@@ -903,7 +843,7 @@ export default function App() {
                         </div>
                         <div className="flex justify-between gap-4 border-b border-slate-200 pb-2">
                           <span className="text-slate-500">Trạng thái backend</span>
-                          <span className={`font-semibold text-right ${apiOnline ? "text-emerald-600" : "text-rose-600"}`}>{apiOnline ? "Đang kết nối" : "Mất kết nối"}</span>
+                          <span className={`font-semibold text-right ${apiOnline ? "text-emerald-600" : "text-rose-600"}`}>{apiOnline ? "Đang kết nối" : "Mất kết nối máy chủ"}</span>
                         </div>
                         <div className="flex justify-between gap-4">
                           <span className="text-slate-500">Khóa cá nhân</span>
@@ -912,7 +852,7 @@ export default function App() {
                       </div>
 
                       <div className="space-y-3">
-                        <p className="text-[11px] text-slate-500 leading-relaxed">Quản lý kho API Gemini AI và chuyển sang khóa riêng khi cần.</p>
+                        <p className="text-[11px] text-slate-500 leading-relaxed">Quản lý khóa API Gemini AI và chuyển sang khóa riêng khi cần.</p>
                         <button
                           onClick={() => {
                             setShowSettingsModal(false);
@@ -920,7 +860,7 @@ export default function App() {
                           }}
                           className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs border-none"
                         >
-                          Mở cài đặt API
+                          Mở phần cài đặt API
                         </button>
                       </div>
                     </div>
@@ -956,11 +896,11 @@ export default function App() {
               <section className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Database className="w-4 h-4 text-violet-600" />
-                  <h4 className="text-sm font-bold text-slate-900">Thông tin hệ thống liên quan</h4>
+                    <h4 className="text-sm font-bold text-slate-900">Thông tin hệ thống</h4>
                 </div>
                 <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2 text-xs">
                   <div className="flex justify-between gap-4 border-b border-slate-200 pb-2">
-                    <span className="text-slate-500">Trạng thái onboarding</span>
+                      <span className="text-slate-500">Trạng thái khởi tạo tài khoản</span>
                     <span className="font-semibold text-slate-900 text-right">{user.hasCompletedOnboarding ? "Đã hoàn tất" : "Chưa hoàn tất"}</span>
                   </div>
                   <div className="flex justify-between gap-4 border-b border-slate-200 pb-2">
@@ -1015,7 +955,7 @@ export default function App() {
 
                 <div>
                   <h4 className="font-bold text-lg tracking-tight">{user.name}</h4>
-                  <p className="text-xs text-slate-400 font-medium">Lớp Chủ Nhiệm: {user.classCode}</p>
+                  <p className="text-xs text-slate-400 font-medium">Lớp chủ nhiệm: {user.classCode}</p>
                 </div>
 
                 <div className="pt-2 border-t border-slate-800/80 space-y-2 text-left text-xs text-slate-300">
@@ -1072,7 +1012,7 @@ export default function App() {
                 <div className="flex justify-between items-center pb-4 border-b border-slate-100">
                   <h3 className="font-bold text-slate-900 flex items-center gap-2 text-sm sm:text-base">
                     <ShieldCheck className="w-5 h-5 text-indigo-600" />
-                    <span>{isEditingTeacher ? "CẬP NHẬT HỒ SƠ SƯ PHẠM" : "HỒ SƠ SƯ PHẠM CỦA THẦY CÔ"}</span>
+                    <span>{isEditingTeacher ? "Cập nhật hồ sơ sư phạm" : "Hồ sơ sư phạm của thầy cô"}</span>
                   </h3>
                   <button
                     onClick={() => {
@@ -1201,7 +1141,7 @@ export default function App() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Left: Presets */}
                       <div className="space-y-2">
-                        <label className="block text-xs font-bold text-slate-700">Chọn hình đại diện mẫu nhanh:</label>
+                        <label className="block text-xs font-bold text-slate-700">Chọn nhanh ảnh đại diện mẫu:</label>
                         <div className="flex flex-wrap gap-2.5">
                           {PRESET_AVATARS.map((av, idx) => (
                             <button
@@ -1265,7 +1205,7 @@ export default function App() {
 
                       {/* Email input */}
                       <div className="space-y-1">
-                        <label className="block text-xs font-bold text-slate-700">Email liên hệ / Đăng nhập:</label>
+                        <label className="block text-xs font-bold text-slate-700">Email liên hệ / đăng nhập:</label>
                         <input
                           type="email"
                           required
