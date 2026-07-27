@@ -36,5 +36,14 @@
     "experience": "",
     "achievements": "",
     "bio": ""
+  },
+  {
+    "id": "usr-6qa74un",
+    "email": "apitest_20260727@eduai.vn",
+    "passwordHash": "8c9a2a2f864e965b426d3fe38491eddeeb5c8759a57c65eb3527feafe8ad86fc",
+    "name": "API Test User",
+    "role": "teacher",
+    "classCode": "4A",
+    "hasCompletedOnboarding": false
   }
 ]

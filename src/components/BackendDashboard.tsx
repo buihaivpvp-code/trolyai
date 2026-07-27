@@ -19,23 +19,23 @@ import {
 
 const quickStats = [
   {
-    label: "API vận hành",
+    label: "API hệ thống",
     value: "12+",
-    note: "Nhóm endpoint phục vụ giáo viên, tài liệu, AI và sổ đầu bài",
+    note: "Nơi tập trung toàn bộ endpoint xác thực, dữ liệu học sinh, AI và nghiệp vụ giáo viên",
     icon: Activity,
     accent: "from-emerald-400 to-teal-500"
   },
   {
-    label: "Kho dữ liệu",
-    value: "10",
-    note: "Nguồn JSON đang cấp dữ liệu cho học sinh, điểm số và hồ sơ",
+    label: "Kho dữ liệu lõi",
+    value: "10+",
+    note: "Lưu dữ liệu hệ thống, hồ sơ, điểm số, nhật ký, tài liệu và các nguồn đồng bộ nội bộ",
     icon: Database,
     accent: "from-sky-400 to-indigo-500"
   },
   {
-    label: "Module nghiệp vụ",
-    value: "06",
-    note: "Các khối chức năng cốt lõi đang hiển thị trên hệ thống giáo viên",
+    label: "Lớp điều phối backend",
+    value: "05",
+    note: "Gồm tài khoản, tư duy AI, API, data storage và tài nguyên vận hành toàn hệ thống",
     icon: LayoutDashboard,
     accent: "from-violet-400 to-fuchsia-500"
   }
@@ -43,52 +43,52 @@ const quickStats = [
 
 const backendModules = [
   {
-    title: "Quản lý tài khoản giáo viên",
+    title: "Kho API nghiệp vụ",
     description:
-      "Xử lý xác thực, hồ sơ cá nhân, onboarding và phân quyền giữa giáo viên với quản trị viên.",
-    icon: ShieldCheck,
-    status: "Bảo mật nhiều lớp"
+      "Lưu và điều phối toàn bộ API cho đăng nhập, học sinh, lớp học, tài liệu, AI và các luồng tích hợp hệ thống.",
+    icon: ServerCog,
+    status: "Gateway trung tâm"
   },
   {
-    title: "Kho tài liệu & upload",
+    title: "Bộ nhớ tư duy AI",
     description:
-      "Tiếp nhận tài liệu giảng dạy, chuẩn hoá dữ liệu đầu vào và đồng bộ vào hệ thống khai thác AI.",
+      "Lưu prompt, ngữ cảnh, tri thức, cache phản hồi và các lớp suy luận để AI trả lời đúng theo hệ thống.",
+    icon: Bot,
+    status: "Ngữ cảnh dài hạn"
+  },
+  {
+    title: "Kho data & tài liệu",
+    description:
+      "Lưu dữ liệu học sinh, điểm số, hồ sơ, nhật ký, uploads và các nguồn JSON nội bộ phục vụ vận hành.",
     icon: FolderOpenDot,
-    status: "Sẵn sàng mở rộng"
-  },
-  {
-    title: "Hồ sơ học sinh & lớp học",
-    description:
-      "Tổ chức dữ liệu lớp, học bạ, điểm số, hành vi, năng lực và theo dõi xuyên suốt năm học.",
-    icon: Users2,
     status: "Dữ liệu tập trung"
   },
   {
-    title: "AI tạo đề, slide, nhận xét",
+    title: "Quản lý tài khoản & phân quyền",
     description:
-      "Kết nối Gemini, fallback nội bộ và luồng kiểm thử API key dành riêng cho từng tài khoản.",
-    icon: Bot,
-    status: "Tối ưu theo ngữ cảnh"
+      "Lưu tài khoản, token, phiên đăng nhập, vai trò người dùng và các quy tắc bảo mật cho toàn nền tảng.",
+    icon: ShieldCheck,
+    status: "Bảo mật nhiều lớp"
   }
 ];
 
 const operationCards = [
   {
-    title: "Kiểm tra tên miền /backend",
+    title: "Lưu API và route hệ thống",
     description:
-      "Đường dẫn này nay đã có giao diện frontend riêng để tránh lỗi 404 trên môi trường static hosting.",
+      "Backend là nơi giữ toàn bộ route /api, middleware, xác thực, phân quyền và các điểm kết nối dịch vụ.",
     icon: ServerCog
   },
   {
-    title: "Giám sát tích hợp API",
+    title: "Lưu tư duy và tri thức AI",
     description:
-      "Ưu tiên xác minh các endpoint /api/auth, /api/students, /api/gemini và lớp fallback dữ liệu.",
+      "Quản lý prompt, knowledge cache, fallback model, hành vi trả lời và cấu hình suy luận cho từng chức năng.",
     icon: Wrench
   },
   {
-    title: "Tài nguyên hệ thống",
+    title: "Lưu data, tài khoản và tài nguyên lõi",
     description:
-      "Theo dõi thư mục data/, uploads/ và backend/routes để đảm bảo đồng nhất giữa UI và dữ liệu.",
+      "Theo dõi data/, uploads/, users, hồ sơ học sinh và toàn bộ thành phần thuộc hạ tầng vận hành của hệ thống.",
     icon: FileStack
   }
 ];
@@ -116,9 +116,9 @@ export default function BackendDashboard() {
                   Trung tâm vận hành hệ thống EduAI
                 </h1>
                 <p className="max-w-2xl text-sm leading-7 text-slate-300 sm:text-[15px]">
-                  Khu vực này đại diện cho lớp vận hành phía sau sản phẩm:
-                  quản trị dữ liệu, xác thực tài khoản, xử lý tài liệu, tích hợp
-                  AI và các API nghiệp vụ phục vụ giáo viên tiểu học.
+                  Khu vực này đại diện cho backend lõi của sản phẩm: nơi lưu API,
+                  lưu tư duy AI, lưu data, lưu tài khoản và toàn bộ thành phần
+                  thuộc hệ thống để frontend giáo viên có thể vận hành ổn định.
                 </p>
               </div>
 
@@ -141,8 +141,8 @@ export default function BackendDashboard() {
                   Sứ mệnh hệ thống
                 </div>
                 <p className="text-sm leading-6 text-slate-200">
-                  Biến hạ tầng giáo dục thành một trải nghiệm ổn định, dễ vận
-                  hành, an toàn và sẵn sàng mở rộng.
+                  Xây backend như bộ não vận hành trung tâm: lưu tri thức, dữ
+                  liệu, tài khoản và dịch vụ hệ thống theo cấu trúc an toàn, dễ mở rộng.
                 </p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-500/20 to-cyan-400/10 p-4">
@@ -151,8 +151,8 @@ export default function BackendDashboard() {
                   Trạng thái hiển thị
                 </div>
                 <p className="text-sm leading-6 text-slate-100">
-                  Giao diện frontend này giúp tên miền backend không còn rơi vào
-                  màn hình NOT_FOUND khi được truy cập trực tiếp.
+                  Giao diện này diễn giải rõ backend đang giữ vai trò trung tâm lưu API,
+                  tư duy AI, data và tài khoản của toàn bộ nền tảng.
                 </p>
               </div>
             </div>
@@ -199,7 +199,7 @@ export default function BackendDashboard() {
                     Module backend
                   </p>
                   <h2 className="mt-2 text-2xl font-black tracking-tight text-white">
-                    Các lớp chức năng đang bảo vệ toàn bộ trải nghiệm giáo viên
+                    Các lớp backend đang lưu giữ và điều phối toàn bộ lõi hệ thống
                   </h2>
                 </div>
                 <div className="hidden rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-2 text-xs font-semibold text-slate-300 md:flex md:items-center md:gap-2">
