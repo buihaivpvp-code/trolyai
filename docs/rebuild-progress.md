@@ -1,86 +1,64 @@
-# Rebuild Progress
+# Rebuild Progress — EduAI
 
 ## Giai đoạn 1 — Khảo sát hiện trạng
+- **Mục tiêu:** Đọc dự án, xác định kiến trúc hiện tại, rủi ro và hướng rebuild mà chưa sửa code runtime.
+- **File đã sửa:**
+  - `docs/rebuild-audit.md`
+- **File đã tạo:**
+  - `docs/rebuild-audit.md`
+- **File đã xóa:**
+  - Không có
+- **Lỗi phát hiện:**
+  - Auth hiện tại phụ thuộc backend cũ và `localStorage`
+  - File upload đang lưu local disk `uploads/`
+  - Dữ liệu nghiệp vụ đang phân tán giữa JSON, localStorage và backend runtime
+  - Chưa có Supabase client/auth layer chuẩn trong luồng chính đã khảo sát
+  - Chưa có cấu hình deploy/CI tối thiểu rõ ràng theo mục tiêu mới
+  - Backend hiện tại chưa phù hợp kiến trúc Vercel + Supabase + R2
+- **Cách xử lý:**
+  - Lập báo cáo audit chi tiết trong `docs/rebuild-audit.md`
+  - Xác định thứ tự thực hiện theo từng giai đoạn có kiểm soát
+- **lint:** Chưa chạy trong giai đoạn này
+- **typecheck:** Chưa chạy trong giai đoạn này
+- **test:** Chưa xác minh đầy đủ script test trong giai đoạn này
+- **build:** Chưa chạy trong giai đoạn này
+- **commit hash:** Chưa commit ở cuối giai đoạn 1, chờ xử lý checkpoint giai đoạn 2
+- **Việc còn lại:**
+  - Tạo checkpoint Git an toàn
+  - Kiểm tra build/lint/typecheck hiện trạng
+  - Bắt đầu chuẩn hóa hạ tầng dùng chung trước khi rebuild auth
 
-### Mục tiêu
-- Đọc toàn bộ dự án ở mức kiến trúc và luồng chính
-- Xác định framework, cấu trúc thư mục, auth, data layer, upload, env, deploy
-- Tạo báo cáo audit trước khi sửa code
-
-### File đã sửa
-- Không sửa file code ứng dụng trong giai đoạn này
-
-### File đã tạo
-- `docs/rebuild-audit.md`
-- `docs/rebuild-progress.md`
-
-### File đã xóa
-- Không có
-
-### Lỗi phát hiện
-- Working tree đang có thay đổi chưa được checkpoint:
-  - `data/users.json`
-  - `src/App.tsx`
-  - `src/components/BackendDashboard.tsx`
-  - `src/utils/api.ts`
-- Auth hiện tại vẫn dùng backend cũ + `localStorage`
-- Dữ liệu nghiệp vụ đang dựa nhiều vào JSON cục bộ
-- Upload hiện còn phụ thuộc `uploads/` cục bộ và backend-side R2 flow
-- Chưa thấy GitHub Actions workflow
-- Chưa thấy cấu hình Vercel chuẩn hóa rõ trong repo
-- Chưa đủ thông tin chắc chắn về schema Supabase và quyền user/admin
-- Bundle frontend lớn khi build production:
-  - `dist/assets/main-D_q8p9pJ.js` khoảng `1.88 MB`
-
-### Cách xử lý
-- Đã tạo `docs/rebuild-audit.md` để chốt hiện trạng, rủi ro và thứ tự thực hiện
-- Đã dừng trước checkpoint/refactor theo nguyên tắc an toàn
-- Đã giữ nguyên working tree hiện tại theo chỉ đạo của người dùng
-- Chưa sửa code ứng dụng khi chưa có checkpoint an toàn
-
-### Lint
-- `npm run lint` → pass (`EXIT_CODE:0`)
-
-### Typecheck
-- Hiện script `lint` đang chạy `tsc --noEmit`
-- Kết quả hiện tại: pass
-
-### Test
-- Chưa thấy script `test` trong `package.json`
-- Chưa chạy test tự động
-
-### Build
-- `npm run build` → pass (`EXIT_CODE:0`)
-- Có cảnh báo chunk lớn từ Vite nhưng không chặn build
-
-### Commit hash
-- HEAD hiện tại khi bắt đầu audit:
-  - `f6ab47d24591fc85f4cc6b06a275e82c9bbfbd9d`
-
-### Việc còn lại
-1. Xử lý chiến lược an toàn cho working tree hiện tại
-2. Tạo checkpoint Git trước khi sửa code ứng dụng
-3. Chuẩn hóa hạ tầng dùng chung
-4. Rebuild Supabase authentication
-5. Rebuild Supabase data layer
-6. Rebuild upload với Cloudflare R2
-7. Chuẩn hóa API và error handling
-8. Chuẩn hóa Vercel
-9. Thêm GitHub Actions workflow
-10. Dọn code cũ và xác minh toàn hệ thống
-
----
-
-## Giai đoạn 2 — Checkpoint Git
-
-### Trạng thái
-- Chưa thực hiện
-
-### Lý do chưa thực hiện
-- Working tree đang có thay đổi chưa được checkpoint riêng
-- Theo nguyên tắc an toàn, không được tự ghi đè hoặc gom commit khi chưa xác minh nguồn gốc các thay đổi đó
-
-### Điều kiện để bắt đầu
-- Xác nhận cách xử lý các file modified hiện tại
-- Sau đó mới tạo commit:
-  - `chore: checkpoint before controlled rebuild`
+## Giai đoạn 2 — Tạo checkpoint
+- **Mục tiêu:** Kiểm tra working tree và tạo checkpoint trước khi sửa code.
+- **File đã sửa:**
+  - `docs/rebuild-audit.md`
+  - `docs/rebuild-progress.md`
+- **File đã tạo:**
+  - Không có
+- **File đã xóa:**
+  - Không có
+- **Lỗi phát hiện:**
+  - Working tree không sạch tại thời điểm kiểm tra
+  - Có thay đổi tài liệu đang mở:
+    - `docs/rebuild-audit.md`
+    - `docs/rebuild-progress.md`
+  - Nội dung cũ của `docs/rebuild-progress.md` không phản ánh đúng trạng thái Git hiện tại, nên đã được hiệu chỉnh lại theo thực tế
+- **Cách xử lý:**
+  - Chạy `git status --short --branch`
+  - Rà lại và chuẩn hóa `docs/rebuild-progress.md`
+  - Chưa tạo checkpoint mới cho tới khi xác nhận trạng thái commit an toàn
+- **lint:** Chưa chạy
+- **typecheck:** Chưa chạy
+- **test:** Chưa chạy
+- **build:** Chưa chạy
+- **commit hash:** Chưa tạo checkpoint mới trong phiên làm việc hiện tại
+- **Việc còn lại:**
+  - Tạo commit checkpoint an toàn:
+    - `chore: checkpoint before controlled rebuild`
+  - Kiểm tra lỗi build/lint/typecheck hiện trạng
+  - Chuẩn hóa cấu trúc và hạ tầng dùng chung
+  - Rebuild Supabase authentication
+  - Rebuild data layer
+  - Rebuild upload với Cloudflare R2
+  - Chuẩn hóa Vercel/CI
+  - Dọn code cũ và kiểm tra tổng thể

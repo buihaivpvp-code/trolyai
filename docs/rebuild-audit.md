@@ -1,367 +1,467 @@
 # Rebuild Audit — EduAI
 
-## 1. Kiến trúc hiện tại
+## 1) Kiến trúc hiện tại
 
-### 1.1 Stack và framework
-- **Frontend:** React 19 + Vite 6 + TypeScript
-- **Backend hiện tại:** Express 4 chạy từ `server.ts`
-- **Build hiện tại:** `vite build` cho frontend + `esbuild` bundle `server.ts`
-- **Runtime dev hiện tại:**
-  - `npm run dev` → chạy `tsx server.ts`
-  - `npm run dev:fe` → Vite dev server cổng `2629`
-  - `npm run dev:be` → backend cổng `2630`
+### Tổng quan stack
+- **Frontend**: React 19 + Vite 6 + TypeScript.
+- **Backend hiện tại**: Express chạy qua `tsx server.ts`, bundle production bằng `esbuild`.
+- **Build hiện tại**:
+  - Frontend build bằng `vite build`
+  - Backend build bằng `esbuild server.ts --bundle ... --outfile=dist/server.cjs`
+- **Runtime hiện tại**:
+  - Một tiến trình Node/Express phục vụ API.
+  - Frontend Vite và backend Express đang được ghép trong cùng dự án.
+- **Thư viện đáng chú ý**:
+  - `@supabase/supabase-js` đã được cài nhưng **chưa thấy được dùng trong luồng chính đã khảo sát**.
+  - `@aws-sdk/client-s3` đã được cài nhưng **chưa thấy kiến trúc upload R2 an toàn hoàn chỉnh trong phần đã khảo sát**.
+  - `@google/genai` dùng cho Gemini phía server.
+  - `express`, `jose`, `mammoth`, `pptxgenjs`, `xlsx`.
 
-### 1.2 Cấu trúc thư mục hiện tại
-- `src/` → frontend React
-- `src/components/` → phần lớn UI và logic nghiệp vụ đang trộn chung trong component
-- `src/utils/api.ts` → wrapper fetch dùng `VITE_API_BASE_URL` và tự gắn Bearer token từ `localStorage`
-- `backend/` → middleware, models, routes, services
-- `data/` → dữ liệu JSON nội bộ
-- `uploads/` → file upload lưu trên local disk
-- `public/` / `assets/` → tài nguyên tĩnh
-- `server.ts` → entry backend, mount router, xử lý AI, API và backend console
+### Cấu trúc thư mục hiện tại
+- `src/`: frontend React.
+- `src/components/`: component UI chính.
+- `src/utils/`: tiện ích frontend, có `api.ts`.
+- `backend/`: router, middleware, model/service cho backend Express.
+- `data/`: dữ liệu nghiệp vụ lưu bằng JSON file.
+- `uploads/`: file upload lưu trực tiếp trên ổ đĩa cục bộ.
+- `public/`: static asset công khai.
+- `server.ts`: entry backend/server hiện tại.
+- `assets/`: asset dự án.
 
-### 1.3 Route / màn hình frontend đang thấy
-Từ `src/App.tsx`, giao diện hiện tại có các khu vực chính:
-- `manager` → Danh Sách Lớp Học
-- `repository` → Kho Tài Liệu
-- `slides` → AI Tạo Slide Bài Giảng
-- `tests` → AI Tạo Đề Kiểm Tra
-- `classroom_games` → Kiểm tra bài cũ
-- `journal` → Sổ Đầu Bài AI
+### Điều hướng / route frontend hiện tại
+- Chưa thấy dùng `react-router`.
+- `src/App.tsx` đang dùng **tab state nội bộ**:
+  - `manager`
+  - `repository`
+  - `slides`
+  - `tests`
+  - `classroom_games`
+  - `journal`
+- Nghĩa là “route” hiện tại chủ yếu là **UI tab trong một màn hình**, không phải URL route truyền thống.
 
-Ngoài ra còn có:
-- màn hình `Auth`
-- màn hình `Onboarding`
-- modal hồ sơ giáo viên
-- modal cài đặt hệ thống
-
-### 1.4 Auth hiện tại
-Auth hiện tại đang phụ thuộc backend cũ:
-- `POST /api/auth/login`
-- `POST /api/auth/register`
-- `GET /api/auth/me`
-- `PUT /api/auth/profile`
-
-Dấu hiệu kỹ thuật:
-- token được lưu ở `localStorage` key `auth_token`
-- `src/utils/api.ts` tự lấy token từ `localStorage` và gắn vào header `Authorization`
-- `App.tsx` dùng token localStorage để khôi phục session
-- `Auth.tsx` truyền `user + token` từ backend vào frontend
-- `Onboarding.tsx` và `App.tsx` còn cập nhật token mới từ backend profile API
-
-### 1.5 Database / data layer hiện tại
-Hệ thống hiện tại chưa dùng Supabase Database trong frontend đang chạy.
-
-Nguồn dữ liệu hiện tại gồm:
-- JSON file trong `data/`
-  - `students_base.json`
-  - `grades.json`
-  - `attendances.json`
-  - `behavior_counts.json`
-  - `diaries.json`
-  - `monthly_grades.json`
-  - `psychological_profiles.json`
-  - `semi_boarding_profiles.json`
-  - `talent_profiles.json`
-  - `journal_*`
-  - `users.json`
-- dữ liệu localStorage cho một số tính năng tài liệu / AI
-- dữ liệu runtime backend qua `Database` service
-- file upload lưu trên ổ đĩa cục bộ trong `uploads/`
-
-### 1.6 API hiện tại
-Các API backend hiện đang được mount trực tiếp trong `server.ts`:
+### API hiện tại
+Từ `server.ts` đã xác nhận các nhóm API:
 - `/api/auth`
 - `/api/students`
 - `/api/journal`
 - `/api/documents`
+- `/api/health`
 
 Ngoài ra còn có:
-- `/api/health`
-- `/api/backend` và `/backend` → backend console HTML
-- nhiều API AI/gemini xử lý ngay trong `server.ts`
+- `/backend`
+- `/api/backend`
 
-### 1.7 Lưu trữ file hiện tại
-Upload hiện tại đang dùng local disk:
-- thư mục `uploads/`
-- frontend gọi:
-  - `/api/documents/upload`
-  - `/api/documents/download/:id`
+Đây là trang console backend HTML riêng, không phải API JSON thuần.
 
-Kiến trúc này **không phù hợp** với deploy Vercel serverless lâu dài vì:
-- phụ thuộc filesystem cục bộ
-- không phù hợp môi trường ephemeral
-- khó scale
-- không an toàn cho production multi-instance
+### Auth hiện tại
+Đã xác nhận từ `backend/routes/auth.ts` và `src/App.tsx`:
 
-### 1.8 Supabase hiện tại
-- Package `@supabase/supabase-js` **đã có** trong `package.json`
-- Tuy nhiên trong `src/` **chưa có Supabase client**
-- Chưa thấy `createClient`, chưa có auth provider/store Supabase
-- File env đang có:
-  - `NEXT_PUBLIC_SUPABASE_URL`
-  - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-- Đây là naming không phù hợp với Vite, cần chuẩn hóa sang:
-  - `VITE_SUPABASE_URL`
-  - `VITE_SUPABASE_ANON_KEY`
+- Đăng ký: `POST /api/auth/register`
+- Đăng nhập: `POST /api/auth/login`
+- Lấy user hiện tại: `GET /api/auth/me`
+- Cập nhật hồ sơ: `PUT /api/auth/profile`
 
-### 1.9 Cloudflare R2 hiện tại
-- Có package `@aws-sdk/client-s3`
-- Có file `env.r2.example`
-- Chưa xác nhận được luồng presigned URL hoàn chỉnh từ frontend → serverless → R2
-- Upload hiện tại vẫn đang dựa vào backend local upload
+Cách hoạt động hiện tại:
+- Backend tự hash password.
+- Backend tự generate token riêng.
+- Frontend lưu token vào `localStorage` với key:
+  - `auth_token`
+- Frontend tự gắn `Authorization: Bearer ...` qua `src/utils/api.ts`.
 
-### 1.10 Vercel / GitHub / CI hiện tại
-- Chưa thấy bằng chứng cấu hình `vercel.json`
-- Chưa thấy workflow CI trong khảo sát hiện tại
-- Remote GitHub hiện có:
+### Dữ liệu nghiệp vụ hiện tại
+Dữ liệu đang lưu bằng file JSON trong `data/`, gồm:
+- `students_base.json`
+- `grades.json`
+- `attendances.json`
+- `behavior_counts.json`
+- `diaries.json`
+- `journal_infractions.json`
+- `journal_praises.json`
+- `journals_base.json`
+- `monthly_grades.json`
+- `psychological_profiles.json`
+- `semi_boarding_profiles.json`
+- `talent_profiles.json`
+- `users.json`
+- `ai_sample_knowledge.json`
+
+=> Đây là dấu hiệu rõ ràng của **file-based database / mock persistence**, không phù hợp mục tiêu production với Supabase Database.
+
+### Lưu trữ file hiện tại
+- File tài liệu đang lưu trực tiếp trong thư mục `uploads/`.
+- `server.ts` tạo thư mục `uploads/` trên local filesystem nếu chưa tồn tại.
+- Console backend cũng đang liệt kê trực tiếp file trong `uploads/`.
+
+=> Cách này **không phù hợp cho Vercel production** vì filesystem không bền vững theo mô hình serverless.
+
+### Biến môi trường hiện tại đã quan sát
+- `GEMINI_API_KEY`
+- `PORT`
+- `VITE_API_BASE_URL`
+- Có file:
+  - `.env.local`
+  - `env.local`
+  - `env.r2.example`
+
+Chưa xác minh đầy đủ toàn bộ biến môi trường thực tế vì chưa đọc toàn bộ file env, và không nên đưa secret thật vào báo cáo.
+
+### Vercel / GitHub / CI
+- Chưa thấy file `vercel.json` trong root hiện tại.
+- Chưa thấy thư mục `.github/workflows/` trong danh sách file hiện có.
+- Đã phát hiện remote GitHub:
   - `origin: https://github.com/buihaivpvp-code/trolyai.git`
-- Build script hiện tại đang bundle cả frontend và Express backend vào `dist/`
 
-## 2. Vấn đề hiện tại
+=> Nhiều khả năng hiện tại chưa có pipeline CI chuẩn hóa hoặc chưa cấu hình deploy tối ưu theo mục tiêu mới.
+
+---
+
+## 2) Vấn đề hiện tại
 
 ### 2.1 Auth chưa đúng kiến trúc mục tiêu
-- đang dùng backend auth cũ
-- đang lưu `auth_token` trong `localStorage`
-- session restore do frontend tự xử lý
-- chưa dùng Supabase Auth session lifecycle chuẩn
-- frontend đang tự mang trách nhiệm auth state thay vì một provider/store tập trung
+- Đang dùng backend auth tự xây.
+- Token đang lưu trong `localStorage`.
+- Frontend tự quản access token.
+- Chưa dùng Supabase Auth làm nguồn sự thật duy nhất.
+- `PUT /api/auth/profile` hiện còn trả token mới để frontend lưu lại.
 
-### 2.2 Data layer phân tán và khó bảo trì
-- dữ liệu nằm ở nhiều nơi: JSON, localStorage, backend runtime
-- component gọi API trực tiếp
-- chưa có tầng `services/repositories` thống nhất
-- logic UI và logic dữ liệu đang trộn trong nhiều component
+### 2.2 Dữ liệu đang lưu bằng JSON file
+- `data/*.json` đang đóng vai trò database nghiệp vụ.
+- Không có transaction, migration rõ ràng, audit trail, indexing, quan hệ dữ liệu chuẩn.
+- Khó scale, khó đồng bộ, dễ phát sinh sai lệch dữ liệu.
 
-### 2.3 Lưu trữ file không phù hợp production
-- file upload đang lưu trên local disk
-- không phù hợp Vercel
-- chưa có kiến trúc presigned upload/download qua R2
-- metadata file chưa được tách rõ sang database mục tiêu
+### 2.3 File upload đang phụ thuộc local filesystem
+- File lưu vào `uploads/`.
+- Không phù hợp Vercel serverless.
+- Không phù hợp kiến trúc lưu trữ cloud bền vững như Cloudflare R2.
 
-### 2.4 Cấu hình môi trường chưa chuẩn
-- đang có `NEXT_PUBLIC_*` trong dự án Vite
-- dễ gây sai cấu hình runtime frontend
-- cần tách rõ env frontend và env server
-- cần đảm bảo secret không đi vào `VITE_*`
+### 2.4 Frontend đang phụ thuộc backend cũ
+- `src/App.tsx` gọi:
+  - `/api/auth/me`
+  - `/api/auth/profile`
+  - `/api/students`
+- `src/utils/api.ts` tự gắn Bearer token cho mọi request.
+- Điều này cho thấy UI đang gắn chặt với backend auth cũ.
 
-### 2.5 Browser storage đang chứa dữ liệu không nên giữ lâu dài
-Tìm thấy `localStorage` trong nhiều nơi:
-- `auth_token`
-- `remember_email`
-- `remember_password`
-- `remember_me`
-- theme/font/thinking preferences
-- document repository data
-- lesson plan related cached documents
-- slide repository data
-- test creator cache
+### 2.5 Dữ liệu nhạy cảm và trạng thái nghiệp vụ đang ở phía trình duyệt
+- `auth_token` đang nằm trong `localStorage`.
+- Avatar đang bị nén thành **base64** và đẩy vào profile payload.
+- Một số setting UI cũng lưu `localStorage`:
+  - `eduai_theme_mode`
+  - `eduai_font_scale`
+  - `eduai_thinking_mode`
 
-Rủi ro:
-- token auth không nên tự quản thủ công
-- password ghi nhớ trong localStorage là rủi ro bảo mật rõ ràng
-- dữ liệu nghiệp vụ tài liệu không nên chỉ nằm localStorage nếu cần đồng bộ và production persistence
+Lưu ý:
+- Setting UI thuần cá nhân có thể chấp nhận lưu localStorage.
+- Nhưng token xác thực và dữ liệu ảnh dạng base64 trong profile là hướng không nên giữ.
 
-### 2.6 API contract chưa thống nhất
-- nhiều component tự xử lý error
-- frontend đang kiểm tra cả trường hợp backend trả HTML thay vì JSON
-- có dấu hiệu frontend có thể gọi sai base URL / sai proxy ở vài môi trường
-- error handling chưa chuẩn hóa
-
-### 2.7 Scripts và CI chưa rõ ràng
-- `lint` hiện tại thực chất là `tsc --noEmit`
-- chưa có script `typecheck` riêng
-- chưa thấy script `test`
-- chưa thấy GitHub Action validation tối thiểu
-
-### 2.8 Backend hiện tại quá lớn
-- `server.ts` rất lớn, chứa:
-  - router mounting
+### 2.6 Backend hiện tại không phù hợp trực tiếp với mục tiêu Vercel đơn giản
+- Dự án đang dựa vào một `server.ts` lớn, gom nhiều trách nhiệm:
+  - API auth
+  - API dữ liệu
+  - file upload
   - health
   - backend console HTML
-  - Gemini integration
-  - fallback content generators
-  - AI orchestration
-- khó bảo trì, khó deploy tối ưu trên Vercel nếu giữ nguyên nguyên khối
+  - AI Gemini orchestration
+- Mô hình này không khớp tốt với hướng:
+  - frontend deploy Vercel
+  - serverless API tối thiểu
+  - Supabase Auth + Database
+  - R2 upload qua presigned URL
 
-## 3. Phần cần giữ nguyên
+### 2.7 Kiến trúc trộn UI, business data và server concern
+- Frontend đang có phần xử lý avatar file, base64, đồng bộ token.
+- Backend đang vừa là auth server, data server, file server, AI broker, admin console.
+- Chưa có ranh giới service/data layer rõ ràng.
 
-Các phần cần giữ nguyên theo yêu cầu:
-- toàn bộ giao diện hiện tại
-- bố cục, màu sắc, typography, animation
-- nội dung và trải nghiệm người dùng
-- tên tab, route logic theo UI hiện có
-- luồng đăng nhập / đăng ký / onboarding / dashboard ở cấp độ UX
-- các chức năng chính:
-  - quản lý học sinh
-  - kho tài liệu
-  - tạo slide AI
-  - tạo đề AI
-  - classroom games
-  - sổ đầu bài
-  - hồ sơ giáo viên
-  - cài đặt
+### 2.8 Có dấu hiệu code/kiến trúc dư thừa hoặc chưa đồng nhất
+- Có `@supabase/supabase-js` trong dependencies nhưng chưa thấy integration chuẩn trong phần đã khảo sát.
+- Có `@aws-sdk/client-s3` nhưng chưa thấy upload flow R2 an toàn hoàn chỉnh trong phần đã khảo sát.
+- Có cả `env.local` và `.env.local`, cần rà lại trách nhiệm và nguy cơ nhầm cấu hình.
+- Script `lint` hiện chỉ là `tsc --noEmit`, chưa có ESLint riêng.
 
-Các phần lưu localStorage cho preference UI có thể được giữ tạm:
-- theme mode
-- font scale
-- thinking mode
+### 2.9 Console backend HTML không cần cho kiến trúc mục tiêu
+- `/backend` và `/api/backend` đang render HTML quản trị trực tiếp.
+- Đây có thể là phần hỗ trợ kiểm tra tạm thời, nhưng không phù hợp mục tiêu backend tối giản cho Vercel + Supabase.
 
-## 4. Phần cần sửa
+---
 
-### 4.1 Auth
-- thay auth backend cũ bằng Supabase Auth
-- tạo một Supabase client duy nhất
-- tạo một Auth Provider / Store duy nhất
-- thay `localStorage auth_token` bằng session Supabase
-- giữ nguyên UI `Auth.tsx`, chỉ thay logic phía sau
+## 3) Phần cần giữ nguyên
 
-### 4.2 Data layer
-- gom query/IO vào service layer
-- giảm việc component gọi API trực tiếp
-- chuẩn hóa flow:
-  - UI
-  - hook/feature service
-  - data service
-  - Supabase / serverless API
+Theo yêu cầu, các phần sau cần ưu tiên giữ nguyên:
 
-### 4.3 Env
-- đổi frontend env sang `VITE_*`
-- tách env frontend/server rõ ràng
-- cập nhật `.env.example`
-- không đưa secret vào frontend
+### UI/UX
+- Giao diện hiện tại.
+- Bố cục hiện tại.
+- Màu sắc.
+- Typography.
+- Animation.
+- Nội dung text.
+- Trải nghiệm người dùng hiện tại.
+- Tên tab/chức năng hiện có.
 
-### 4.4 Upload
-- thay upload local disk bằng R2 presigned URL
-- dùng serverless API trên Vercel để sinh URL
-- lưu metadata file vào Supabase
+### Luồng nghiệp vụ người dùng
+- Đăng ký / đăng nhập / đăng xuất.
+- Onboarding giáo viên.
+- Quản lý hồ sơ giáo viên.
+- Danh sách lớp học.
+- Kho tài liệu.
+- AI tạo slide.
+- AI tạo đề kiểm tra.
+- Kiểm tra bài cũ.
+- Sổ đầu bài AI.
 
-### 4.5 Error handling
-- tạo cơ chế thống nhất cho loading/success/error
-- tránh để component tự parse lỗi mỗi nơi một kiểu
+### Naming có nguy cơ ảnh hưởng UI
+- Không đổi tùy tiện:
+  - tên component
+  - tên tab
+  - route API nếu UI đang phụ thuộc trực tiếp
+  - tên field đã được UI consume
 
-### 4.6 Build/CI
-- chuẩn hóa scripts:
-  - lint
-  - typecheck
-  - test (nếu có)
-  - build
-- thêm GitHub Action validation tối thiểu
+---
 
-## 5. Phần cần thay thế
+## 4) Phần cần sửa
 
-Các phần nên được thay thế có kiểm soát:
-1. **Auth token localStorage** → Supabase session
-2. **Backend auth routes cho frontend auth** → Supabase Auth flow
-3. **Upload local filesystem** → R2 presigned upload/download
-4. **Document persistence trong localStorage** → Supabase tables + metadata
-5. **NEXT_PUBLIC_* env trong Vite app** → `VITE_*`
-6. **Component-level API access phân tán** → shared service/repository layer
+### Auth
+- Thay backend auth tự xây bằng **Supabase Auth**.
+- Xóa luồng lưu `auth_token` ở frontend.
+- Dùng một Supabase client duy nhất.
+- Dùng một Auth Provider/store duy nhất.
+- Khôi phục session qua Supabase thay vì localStorage thủ công.
 
-## 6. Phần cần xóa
+### Data layer
+- Tách UI khỏi cách truy cập data.
+- Tạo `services/` hoặc `features/.../services` thống nhất.
+- Không để query/HTTP/Supabase gọi rải rác trong component.
 
-Chỉ xóa sau khi chứng minh không còn dùng:
-- backend auth cũ phục vụ login/register/me/profile
-- duplicate auth/token handling trong frontend
-- `auth_token` localStorage flow
-- remember password localStorage
-- local upload flow phụ thuộc `uploads/`
-- mock/local document persistence nếu đã chuyển ổn định sang Supabase
-- env cũ không còn sử dụng
-- dead code / duplicate helper / duplicate service
+### Upload
+- Thay upload local filesystem bằng:
+  - frontend
+  - gọi API serverless
+  - xác thực session Supabase
+  - tạo presigned URL
+  - upload thẳng lên R2
+  - lưu metadata vào Supabase
 
-## 7. Rủi ro
+### Error handling
+- Chuẩn hóa error/loading/success/retry.
+- Không để mỗi component xử lý lỗi theo kiểu riêng.
 
-### 7.1 Rủi ro thiếu thông tin nghiệp vụ
-Hiện chưa đủ thông tin chắc chắn về:
-- schema Supabase mục tiêu
-- mapping đầy đủ giữa JSON hiện tại và entity database
-- phân quyền user/admin thực tế
-- cấu trúc bucket R2
-- domain/public access policy của R2
+### Cấu hình
+- Chuẩn hóa env:
+  - frontend public env
+  - server secret env
+- Tách rõ biến VITE_* và biến secret server.
 
-### 7.2 Rủi ro mất dữ liệu
-- migrate từ JSON/localStorage sang database nếu làm vội có thể mất dữ liệu
-- upload đang nằm trong `uploads/`, nếu chuyển storage mà không có chiến lược migration sẽ mất liên kết file
+### Runtime / Deploy
+- Điều chỉnh kiến trúc để tương thích tốt với Vercel.
+- Giảm phụ thuộc vào server Express stateful/local disk.
 
-### 7.3 Rủi ro phụ thuộc backend cũ ẩn
-- nhiều component đang gọi `/api/*`
-- có thể một số luồng business đang phụ thuộc backend cũ nhiều hơn auth
-- không được xóa backend cũ hàng loạt trước khi xác định từng dependency
+---
 
-### 7.4 Rủi ro production env
-- thiếu hoặc sai Supabase URL / anon key
-- thiếu R2 account/bucket/domain
-- secret có thể đang nằm sai vị trí hoặc chưa cấu hình server-only
+## 5) Phần cần thay thế
 
-### 7.5 Rủi ro deploy
-- Vercel serverless không phù hợp lưu file local
-- nếu giữ nguyên `server.ts` monolith có thể khó tách API route sạch sẽ
+### Cần thay thế hoàn toàn hoặc gần hoàn toàn
+1. **Backend auth cũ**
+   - Thay bằng Supabase Auth.
 
-## 8. Thứ tự thực hiện
+2. **JSON database nghiệp vụ**
+   - Thay bằng Supabase Database theo từng entity.
 
-### Giai đoạn A — Audit và checkpoint
-1. Hoàn tất audit
-2. Kiểm tra `git status`
-3. Nếu working tree sạch hoặc kiểm soát được, tạo checkpoint commit:
-   - `chore: checkpoint before controlled rebuild`
+3. **Upload local filesystem**
+   - Thay bằng Cloudflare R2.
 
-### Giai đoạn B — Chuẩn hóa hạ tầng dùng chung
-1. Chuẩn hóa cấu trúc `src/` theo trách nhiệm, không di chuyển hình thức
-2. Tạo shared:
-   - `lib/`
-   - `services/`
-   - `contexts/` hoặc `stores/`
-   - `types/` nếu cần tách thêm
-3. Tách API/error/auth utilities
+4. **Token handling trong frontend**
+   - Thay bằng session handling của Supabase client.
 
-### Giai đoạn C — Rebuild auth bằng Supabase
-1. Tạo Supabase client duy nhất
-2. Tạo Auth Provider/Store
-3. Thay logic `Auth.tsx`, `App.tsx`, `Onboarding.tsx`, `api.ts`
-4. Giữ nguyên UI
-5. Build kiểm tra
+5. **Data access rải rác**
+   - Thay bằng service/repository layer có cấu trúc.
 
-### Giai đoạn D — Rebuild data layer
-1. Audit từng entity đang dùng
-2. Xác định phần nào tạm giữ backend cũ, phần nào chuyển Supabase
-3. Tạo services/repositories thống nhất
-4. Giảm Supabase/API call rải rác trong component
-5. Build kiểm tra
+6. **API phụ thuộc server Express monolith**
+   - Thay phần tối thiểu cần thiết bằng Vercel serverless API cho presign/upload hoặc bridge logic cần secret.
 
-### Giai đoạn E — Rebuild upload bằng R2
-1. Tạo serverless API presigned upload/download
-2. Xác thực session Supabase ở server
-3. Upload trực tiếp từ frontend lên R2
-4. Lưu metadata vào Supabase
-5. Build kiểm tra
+---
 
-### Giai đoạn F — Vercel / CI / cleanup
-1. Chuẩn hóa env example
-2. Kiểm tra build target Vercel
-3. Thêm workflow validation
-4. Xóa code cũ đã chứng minh không dùng
-5. Lint / typecheck / build / test
+## 6) Phần cần xóa
 
-## 9. Kết luận audit ban đầu
+Chưa xóa ngay trong giai đoạn audit. Dự kiến các nhóm có thể xóa sau khi đã thay thế an toàn:
 
-Dự án **không cần đổi framework**. Hướng tái cấu trúc phù hợp nhất là:
-- giữ nguyên React + Vite
-- loại bỏ auth backend cũ cho frontend auth
-- dùng Supabase Auth + Supabase Database
-- dùng Cloudflare R2 cho file
-- giữ giao diện hiện tại
-- chuyển đổi từng phần có kiểm soát
-- không xóa toàn bộ backend ngay lập tức
+- Backend auth cũ (`/api/auth/...`) sau khi Supabase Auth hoạt động ổn định.
+- Luồng lưu `auth_token` trong localStorage.
+- Phần regenerate token sau update profile.
+- Local JSON database khi entity tương ứng đã được chuyển sang Supabase.
+- `uploads/` local storage flow.
+- Console `/backend` nếu không còn cần.
+- Service/helper/client cũ không còn reference.
+- Package dư thừa sau khi hoàn tất chuyển đổi.
 
-## 10. Các blocker hiện tại cần theo dõi trong quá trình triển khai
+**Nguyên tắc**: chỉ xóa sau khi:
+- đã tìm hết reference;
+- đã build;
+- đã test luồng tương ứng;
+- đã ghi vào progress report.
 
-Nếu gặp một trong các điều kiện sau thì phải dừng để báo cáo:
-- thiếu `VITE_SUPABASE_URL`
-- thiếu `VITE_SUPABASE_ANON_KEY`
-- chưa có schema nghiệp vụ rõ ràng
-- chưa có thông tin bucket/domain/secret R2
-- chưa rõ quyền user/admin
-- phát hiện working tree có thay đổi không xác định
-- migration có nguy cơ phá dữ liệu hiện có
+---
+
+## 7) Rủi ro
+
+### Rủi ro 1 — Chưa biết schema nghiệp vụ chuẩn
+Hiện đã thấy nhiều file JSON nghiệp vụ, nhưng:
+- chưa thống kê đầy đủ field của từng entity;
+- chưa xác minh quan hệ giữa các bảng;
+- chưa xác minh quyền user/admin chi tiết.
+
+=> Nếu chuyển database quá sớm có thể làm hỏng dữ liệu hoặc sai quyền.
+
+### Rủi ro 2 — UI phụ thuộc backend cũ ở nhiều điểm
+`src/App.tsx` đã xác nhận phụ thuộc auth/profile/student API cũ.
+Các component khác rất có thể còn gọi trực tiếp API/backend hoặc dùng data cũ.
+
+=> Cần khảo sát theo từng feature trước khi bóc tách.
+
+### Rủi ro 3 — Dữ liệu file và metadata có thể đang gắn chặt
+Tài liệu trong `uploads/` có thể đang liên kết với dữ liệu trong JSON/backend route.
+Nếu chuyển R2 không có mapping metadata rõ ràng sẽ dễ mất liên kết tải file.
+
+### Rủi ro 4 — Avatar đang lưu base64
+Nếu hiện tại avatar được nhúng trực tiếp vào dữ liệu user:
+- có thể dữ liệu user đã chứa blob lớn;
+- có thể cần strategy migration sang file object URL/R2.
+
+### Rủi ro 5 — Vercel không phù hợp với filesystem local
+Nếu giữ logic hiện tại:
+- upload local file sẽ không bền;
+- runtime Express monolith sẽ khó deploy ổn định theo mục tiêu.
+
+### Rủi ro 6 — Secret/config có thể đang đặt sai vị trí
+Có file env đang mở trong VS Code.
+Chưa xác minh toàn bộ biến nào đang để phía frontend/server.
+Cần rà kỹ để tránh lộ secret trong `VITE_*` hoặc repo.
+
+### Rủi ro 7 — Chưa có checkpoint trạng thái sạch
+Chưa chạy `git status` trong giai đoạn này.
+Nếu working tree đang có thay đổi chưa rõ nguồn gốc thì phải dừng ở giai đoạn checkpoint theo yêu cầu.
+
+---
+
+## 8) Thứ tự thực hiện
+
+### Giai đoạn 1 — Audit hiện trạng
+- Hoàn tất tài liệu audit này.
+- Chưa sửa code ứng dụng.
+
+### Giai đoạn 2 — Checkpoint Git an toàn
+- Chạy `git status`.
+- Xác minh không commit `.env`, secret.
+- Nếu working tree sạch hoặc an toàn:
+  - tạo commit: `chore: checkpoint before controlled rebuild`
+- Nếu có thay đổi không rõ nguồn gốc:
+  - ghi nhận trong `docs/rebuild-progress.md`
+  - dừng trước khi can thiệp.
+
+### Giai đoạn 3 — Chuẩn hóa hạ tầng dùng chung
+- Tạo cấu trúc thư mục hợp lý hơn nhưng không di chuyển bừa bãi.
+- Ưu tiên:
+  - `services/`
+  - `lib/`
+  - `contexts/`
+  - `types/`
+  - `utils/`
+- Không đổi UI.
+
+### Giai đoạn 4 — Rebuild auth với Supabase
+- Tạo Supabase client duy nhất.
+- Tạo Auth Provider/store duy nhất.
+- Thay logic form auth hiện tại nhưng giữ nguyên UI.
+- Thay guard và session restore.
+- Loại bỏ localStorage token auth.
+
+### Giai đoạn 5 — Rebuild data layer
+- Khảo sát từng entity từ JSON/API hiện tại.
+- Tạo service layer thống nhất.
+- Chuyển dần từng feature sang service mới.
+- Chưa xóa dữ liệu cũ nếu chưa đủ schema.
+
+### Giai đoạn 6 — Rebuild upload với R2
+- Tạo API serverless presign.
+- Thêm frontend upload service.
+- Lưu metadata vào Supabase.
+- Chuyển dần feature document/avatar nếu phù hợp.
+
+### Giai đoạn 7 — Chuẩn hóa API và error handling
+- Tạo response/error strategy thống nhất.
+- Chống hiển thị raw HTML response trong UI.
+- Chuẩn hóa thông báo tiếng Việt.
+
+### Giai đoạn 8 — Vercel
+- Chuẩn hóa build/output/env/rewrite/API path.
+- Chỉ thêm `vercel.json` nếu thực sự cần.
+
+### Giai đoạn 9 — GitHub/CI
+- Thêm workflow validate tối thiểu:
+  - `npm ci`
+  - `npm run lint`
+  - `npm run typecheck` nếu tách script
+  - `npm run test` nếu có
+  - `npm run build`
+
+### Giai đoạn 10 — Dọn code cũ
+- Xóa có kiểm soát.
+- Mỗi phần xóa phải có chứng cứ không còn dùng.
+
+### Giai đoạn 11 — Kiểm tra tổng thể
+- lint
+- typecheck
+- test
+- build
+- kiểm thử các luồng auth/data/upload/deploy
+
+### Giai đoạn 12 — Commit nhỏ theo mốc
+- `docs: audit current architecture`
+- `refactor: normalize shared infrastructure`
+- `refactor: rebuild Supabase authentication`
+- `refactor: rebuild Supabase data layer`
+- `feat: implement secure Cloudflare R2 upload`
+- `chore: normalize Vercel configuration`
+- `ci: add validation workflow`
+- `chore: remove obsolete code`
+- `test: verify rebuilt application`
+
+---
+
+## 9) Kết luận audit
+
+### Kết luận chính
+Dự án hiện tại **không phải là sai hoàn toàn**, nhưng đang vận hành theo mô hình:
+- frontend React/Vite
+- backend Express riêng
+- auth tự xây
+- database JSON file
+- upload local disk
+
+Mô hình này **không đáp ứng tốt** mục tiêu:
+- Vercel frontend/serverless
+- Supabase Auth
+- Supabase Database
+- Cloudflare R2
+- bảo mật secret đúng chỗ
+- khả năng bảo trì lâu dài
+
+### Hướng tái cấu trúc phù hợp
+- **Không đập đi làm lại UI**.
+- **Không thay framework frontend**.
+- **Giữ nguyên trải nghiệm**.
+- **Chỉ thay hạ tầng kỹ thuật phía sau**:
+  - auth
+  - data persistence
+  - upload
+  - env/deploy
+  - error handling
+  - service boundaries
+
+### Điều kiện cần xác minh trước khi đi tiếp
+- `git status`
+- schema nghiệp vụ thực tế của từng feature
+- env hiện có và secret placement
+- feature nào đang phụ thuộc backend cũ nhiều nhất
+- bucket/domain/thông số R2
+- Supabase URL / anon key / schema / RLS requirement thực tế
