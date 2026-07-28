@@ -5,6 +5,8 @@
 
 import express from "express";
 import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
 import { GoogleGenAI, Type } from "@google/genai";
 import { createServer as createViteServer } from "vite";
 import { AssessmentValue } from "./src/types";
