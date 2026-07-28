@@ -42,18 +42,15 @@ function extractUrl(input: RequestInfo | URL): string {
 }
 
 export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const customKey = localStorage.getItem("custom_gemini_api_key");
   const authToken = localStorage.getItem("auth_token");
   const resolvedInput = resolveApiUrl(input);
   const requestUrl = extractUrl(resolvedInput);
 
-  const isGeminiApi = requestUrl.includes("/api/gemini");
-
   let actualInit = init || {};
   const headers = new Headers(actualInit.headers || {});
 
-  if (customKey && customKey.trim() && isGeminiApi) {
-    headers.set("x-gemini-api-key", customKey.trim());
+  if (requestUrl.includes("/api/gemini")) {
+    headers.delete("x-gemini-api-key");
   }
 
   if (authToken && authToken.trim()) {

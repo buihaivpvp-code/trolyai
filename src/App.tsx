@@ -53,12 +53,6 @@ export default function App() {
   const [user, setUser] = useState<any | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
-  // Gemini Custom API States
-  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
-  const [customApiKey, setCustomApiKey] = useState("");
-  const [testStatus, setTestStatus] = useState<"idle" | "testing" | "success" | "error">("idle");
-  const [testMessage, setTestMessage] = useState("");
-  const [hasCustomKey, setHasCustomKey] = useState(false);
   const [themeMode, setThemeMode] = useState<"light" | "dark">("light");
   const [fontScale, setFontScale] = useState("Vừa");
   const [thinkingMode, setThinkingMode] = useState("Cân bằng");
@@ -240,20 +234,15 @@ export default function App() {
     }
   };
 
-  // Load key and verify session from localStorage on start
+  // Verify session from localStorage on start
   useEffect(() => {
-    // 1. Load custom API key
-    const savedKey = localStorage.getItem("custom_gemini_api_key") || "";
     const savedTheme = localStorage.getItem("eduai_theme_mode") || "light";
     const savedFontScale = localStorage.getItem("eduai_font_scale") || "Vừa";
     const savedThinkingMode = localStorage.getItem("eduai_thinking_mode") || "Cân bằng";
-    setCustomApiKey(savedKey);
-    setHasCustomKey(!!savedKey.trim());
     setThemeMode(savedTheme === "dark" ? "dark" : "light");
     setFontScale(savedFontScale);
     setThinkingMode(savedThinkingMode);
 
-    // 2. Fetch current user session
     const token = localStorage.getItem("auth_token");
     if (!token) {
       setLoadingUser(false);
@@ -270,85 +259,6 @@ export default function App() {
         setLoadingUser(false);
       });
   }, []);
-
-  const handleSaveKey = () => {
-    if (customApiKey.trim()) {
-      localStorage.setItem("custom_gemini_api_key", customApiKey.trim());
-      setHasCustomKey(true);
-      setTestStatus("success");
-      setTestMessage("Đã lưu khóa API cá nhân thành công! Hệ thống sẽ tự động áp dụng khóa này.");
-    } else {
-      localStorage.removeItem("custom_gemini_api_key");
-      setHasCustomKey(false);
-      setTestStatus("idle");
-      setTestMessage("");
-    }
-    setTimeout(() => {
-      setShowApiKeyModal(false);
-      setTestStatus("idle");
-    }, 1500);
-  };
-
-  const handleTestKey = async () => {
-    if (!customApiKey.trim()) {
-      setTestStatus("error");
-      setTestMessage("Vui lòng nhập khóa API trước khi kiểm tra kết nối.");
-      return;
-    }
-
-    setTestStatus("testing");
-    setTestMessage("");
-
-    try {
-      const response = await apiFetch("/api/gemini/test-key", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-gemini-api-key": customApiKey.trim()
-        }
-      });
-      
-      let data;
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        data = await response.json();
-      } else {
-        const text = await response.text();
-        console.error("Non-JSON response:", text);
-        
-        if (text.trim().startsWith("<") || text.includes("<!DOCTYPE") || text.includes("Trang chủ")) {
-          data = {
-            success: false,
-            error: "Hệ thống đang định tuyến API chưa đúng. Máy chủ hiện trả về trang HTML thay vì phản hồi API của ứng dụng. Thầy cô vui lòng kiểm tra cấu hình tên miền, proxy hoặc liên hệ quản trị viên."
-          };
-        } else {
-          data = {
-            success: false,
-            error: `Máy chủ trả về định dạng không hợp lệ: ${text.slice(0, 100)}`
-          };
-        }
-      }
-
-      if (data.success) {
-        setTestStatus("success");
-        setTestMessage(data.message);
-      } else {
-        setTestStatus("error");
-        setTestMessage(data.error || "Không thể xác thực khóa này.");
-      }
-    } catch (err: any) {
-      setTestStatus("error");
-      setTestMessage(err.message || "Lỗi mạng hoặc server không phản hồi.");
-    }
-  };
-
-  const handleDeleteKey = () => {
-    localStorage.removeItem("custom_gemini_api_key");
-    setCustomApiKey("");
-    setHasCustomKey(false);
-    setTestStatus("idle");
-    setTestMessage("");
-  };
 
   const handleThemeChange = (mode: "light" | "dark") => {
     setThemeMode(mode);
@@ -615,97 +525,6 @@ export default function App() {
         </div>
       </footer>
 
-      {/* API Key Modal */}
-      {showApiKeyModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" id="api-key-modal-overlay">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 overflow-hidden" id="api-key-modal-content">
-            <div className="bg-slate-900 px-6 py-4 flex justify-between items-center text-white">
-              <div className="flex items-center gap-2">
-                <Key className="w-5 h-5 text-amber-500" />
-                <h3 className="font-bold text-sm">Cài đặt API trí tuệ nhân tạo (Gemini AI)</h3>
-              </div>
-              <button
-                onClick={() => { setShowApiKeyModal(false); setTestStatus("idle"); }}
-                className="text-slate-400 hover:text-white text-xs cursor-pointer bg-transparent border-none"
-              >
-                ✕ Đóng
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4 text-left">
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Hệ thống EduAI đang sử dụng dịch vụ Google Gemini AI để hỗ trợ giáo án, ra đề thi, soạn slide và nhận xét học sinh. Nếu thầy cô gặp tình trạng quá tải (hết lượt sử dụng miễn phí hằng ngày), thầy cô có thể tự thêm <strong>khóa API cá nhân</strong> để sử dụng không giới hạn.
-              </p>
-
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[11px] text-amber-900 space-y-1">
-                <p className="font-bold">💡 Hướng dẫn lấy khóa API miễn phí:</p>
-                <ol className="list-decimal pl-4 space-y-0.5">
-                  <li>Truy cập trang <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" className="underline font-semibold hover:text-amber-900">Google AI Studio</a>.</li>
-                  <li>Đăng nhập bằng tài khoản Gmail của thầy cô.</li>
-                  <li>Nhấn vào nút <strong>"Get API key"</strong> màu xanh hoặc <strong>"Create API Key"</strong>.</li>
-                  <li>Sao chép mã khóa (chuỗi ký tự dài bắt đầu bằng <code className="bg-amber-100 px-1 rounded font-mono">AIzaSy...</code>) và dán xuống khung dưới đây.</li>
-                </ol>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700">Khóa API Gemini của thầy cô:</label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    placeholder="Nhập khóa API cá nhân (ví dụ: AIzaSy...)"
-                    value={customApiKey}
-                    onChange={(e) => setCustomApiKey(e.target.value)}
-                    className="w-full text-xs px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-slate-800 font-mono"
-                  />
-                </div>
-              </div>
-
-              {testStatus !== "idle" && (
-                <div className={`p-3 rounded-xl text-xs flex gap-2 items-start ${
-                  testStatus === "testing" ? "bg-slate-50 text-slate-600 border border-slate-100" :
-                  testStatus === "success" ? "bg-emerald-50 text-emerald-800 border border-emerald-100" :
-                  "bg-rose-50 text-rose-800 border border-rose-100"
-                }`}>
-                  {testStatus === "testing" && <Loader2 className="w-4 h-4 animate-spin text-slate-500 shrink-0 mt-0.5" />}
-                  {testStatus === "success" && <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />}
-                  {testStatus === "error" && <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />}
-                  <span className="leading-relaxed text-[11px]">{testMessage}</span>
-                </div>
-              )}
-
-              <div className="flex justify-between items-center pt-2 gap-2">
-                {hasCustomKey ? (
-                  <button
-                    onClick={handleDeleteKey}
-                    className="px-3 py-2 border border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 rounded-xl text-xs font-bold transition-all cursor-pointer bg-white"
-                  >
-                    Xóa Khóa Cá Nhân
-                  </button>
-                ) : (
-                  <div />
-                )}
-
-                <div className="flex gap-2 ml-auto">
-                  <button
-                    onClick={handleTestKey}
-                    disabled={testStatus === "testing"}
-                    className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50 border-none"
-                  >
-                    {testStatus === "testing" ? "Đang kiểm tra..." : "Kiểm tra kết nối"}
-                  </button>
-                    <button
-                      onClick={handleSaveKey}
-                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm border-none"
-                    >
-                      Lưu cấu hình
-                    </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Settings Modal */}
       {showSettingsModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto" id="modal-settings">
@@ -833,35 +652,31 @@ export default function App() {
                   <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
                     <div className="flex items-center gap-2">
                       <Key className="w-4 h-4 text-amber-600" />
-                      <h5 className="text-xs font-bold text-slate-800">Kho API</h5>
+                      <h5 className="text-xs font-bold text-slate-800">Kết nối AI</h5>
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between gap-4 border-b border-slate-200 pb-2">
                           <span className="text-slate-500">Nguồn API</span>
-                          <span className="font-semibold text-slate-900 text-right">{hasCustomKey ? "Khóa API cá nhân" : "Khóa mặc định hệ thống"}</span>
+                          <span className="font-semibold text-slate-900 text-right">Khóa hệ thống tại máy chủ</span>
                         </div>
                         <div className="flex justify-between gap-4 border-b border-slate-200 pb-2">
                           <span className="text-slate-500">Trạng thái backend</span>
                           <span className={`font-semibold text-right ${apiOnline ? "text-emerald-600" : "text-rose-600"}`}>{apiOnline ? "Đang kết nối" : "Mất kết nối máy chủ"}</span>
                         </div>
                         <div className="flex justify-between gap-4">
-                          <span className="text-slate-500">Khóa cá nhân</span>
-                          <span className={`font-semibold text-right ${hasCustomKey ? "text-emerald-600" : "text-slate-500"}`}>{hasCustomKey ? "Đã cấu hình" : "Chưa cấu hình"}</span>
+                          <span className="text-slate-500">Bảo mật khóa</span>
+                          <span className="font-semibold text-emerald-600 text-right">Không lưu trên trình duyệt</span>
                         </div>
                       </div>
 
                       <div className="space-y-3">
-                        <p className="text-[11px] text-slate-500 leading-relaxed">Quản lý khóa API Gemini AI và chuyển sang khóa riêng khi cần.</p>
-                        <button
-                          onClick={() => {
-                            setShowSettingsModal(false);
-                            setShowApiKeyModal(true);
-                          }}
-                          className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm border-none"
-                        >
-                          Mở phần cài đặt API
-                        </button>
+                        <p className="text-[11px] text-slate-500 leading-relaxed">
+                          Khóa Gemini được quản lý tập trung ở backend để tránh lộ thông tin nhạy cảm trên trình duyệt của người dùng.
+                        </p>
+                        <div className="px-3.5 py-2 bg-white text-slate-700 rounded-xl text-xs font-semibold border border-slate-200">
+                          Không cần nhập API key thủ công trên thiết bị này.
+                        </div>
                       </div>
                     </div>
                   </div>
