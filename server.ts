@@ -2751,10 +2751,21 @@ async function setupFrontend() {
   });
 }
 
+let setupFrontendPromise: Promise<void> | null = null;
+
+function ensureFrontendSetup(): Promise<void> {
+  if (!setupFrontendPromise) {
+    setupFrontendPromise = setupFrontend();
+  }
+  return setupFrontendPromise;
+}
+
+void ensureFrontendSetup();
+
 export { app };
 
 async function startServer() {
-  await setupFrontend();
+  await ensureFrontendSetup();
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`EduAI: Merged FE + BE running on http://localhost:${PORT}`);
