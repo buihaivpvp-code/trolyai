@@ -1,6 +1,7 @@
 import {
   GetObjectCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -35,31 +36,80 @@ function normalizeConfiguredEndpoint(rawEndpoint: string): { endpoint: string; b
   }
 }
 
-function buildR2Client(): S3Client | null {
-  const explicitEndpoint = getRequiredEnv("CF_R2_ENDPOINT");
+function readStorageConfig() {
+  const endpoint =
+    getRequiredEnv("STORAGE_S3_ENDPOINT") ||
+    getRequiredEnv("S3_ENDPOINT") ||
+    getRequiredEnv("AWS_ENDPOINT") ||
+    getRequiredEnv("CF_R2_ENDPOINT");
+
+  const region =
+    getRequiredEnv("STORAGE_S3_REGION") ||
+    getRequiredEnv("S3_REGION") ||
+    getRequiredEnv("AWS_REGION") ||
+    "auto";
+
+  const accessKeyId =
+    getRequiredEnv("STORAGE_S3_ACCESS_KEY_ID") ||
+    getRequiredEnv("S3_ACCESS_KEY_ID") ||
+    getRequiredEnv("AWS_ACCESS_KEY_ID") ||
+    getRequiredEnv("CF_R2_ACCESS_KEY_ID");
+
+  const secretAccessKey =
+    getRequiredEnv("STORAGE_S3_SECRET_ACCESS_KEY") ||
+    getRequiredEnv("S3_SECRET_ACCESS_KEY") ||
+    getRequiredEnv("AWS_SECRET_ACCESS_KEY") ||
+    getRequiredEnv("CF_R2_SECRET_ACCESS_KEY");
+
+  const bucketName =
+    getRequiredEnv("STORAGE_S3_BUCKET") ||
+    getRequiredEnv("S3_BUCKET") ||
+    getRequiredEnv("AWS_BUCKET") ||
+    getRequiredEnv("CF_R2_BUCKET_NAME");
+
+  const publicBaseUrl =
+    getRequiredEnv("STORAGE_PUBLIC_BASE_URL") ||
+    getRequiredEnv("S3_PUBLIC_BASE_URL") ||
+    getRequiredEnv("AWS_PUBLIC_BASE_URL") ||
+    getRequiredEnv("CF_R2_PUBLIC_BASE_URL");
+
+  const forcePathStyleValue =
+    getRequiredEnv("STORAGE_S3_FORCE_PATH_STYLE") ||
+    getRequiredEnv("S3_FORCE_PATH_STYLE") ||
+    getRequiredEnv("AWS_S3_FORCE_PATH_STYLE");
+
   const accountId = getRequiredEnv("CF_R2_ACCOUNT_ID");
-  const accessKeyId = getRequiredEnv("CF_R2_ACCESS_KEY_ID");
-  const secretAccessKey = getRequiredEnv("CF_R2_SECRET_ACCESS_KEY");
+  const normalizedEndpoint = normalizeConfiguredEndpoint(endpoint);
+  const resolvedEndpoint =
+    normalizedEndpoint?.endpoint || (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : "");
 
-  if (!accessKeyId || !secretAccessKey) {
-    return null;
-  }
+  return {
+    endpoint: resolvedEndpoint,
+    bucketName: bucketName || normalizedEndpoint?.bucketFromPath || "",
+    region,
+    accessKeyId,
+    secretAccessKey,
+    publicBaseUrl: publicBaseUrl.replace(/\/+$/, ""),
+    forcePathStyle:
+      forcePathStyleValue.trim() === ""
+        ? true
+        : !["0", "false", "no"].includes(forcePathStyleValue.toLowerCase())
+  };
+}
 
-  const normalizedEndpoint = normalizeConfiguredEndpoint(explicitEndpoint);
-  const endpoint = normalizedEndpoint?.endpoint || (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : "");
-
-  if (!endpoint) {
+function buildR2Client(config: ReturnType<typeof readStorageConfig>): S3Client | null {
+  if (!config.accessKeyId || !config.secretAccessKey || !config.endpoint) {
     return null;
   }
 
   return new S3Client({
-    region: "auto",
-    endpoint,
+    region: config.region,
+    endpoint: config.endpoint,
     credentials: {
-      accessKeyId,
-      secretAccessKey,
+      accessKeyId: config.accessKeyId,
+      secretAccessKey: config.secretAccessKey,
     },
-    forcePathStyle: true,
+    forcePathStyle: config.forcePathStyle,
   });
 }
 
@@ -94,14 +144,10 @@ class R2StorageService {
   private publicBaseUrl: string;
 
   constructor() {
-    this.client = buildR2Client();
-
-    const explicitEndpoint = getRequiredEnv("CF_R2_ENDPOINT");
-    const normalizedEndpoint = normalizeConfiguredEndpoint(explicitEndpoint);
-    const configuredBucketName = getRequiredEnv("CF_R2_BUCKET_NAME");
-
-    this.bucketName = configuredBucketName || normalizedEndpoint?.bucketFromPath || "";
-    this.publicBaseUrl = getRequiredEnv("CF_R2_PUBLIC_BASE_URL").replace(/\/+$/, "");
+    const config = readStorageConfig();
+    this.client = buildR2Client(config);
+    this.bucketName = config.bucketName;
+    this.publicBaseUrl = config.publicBaseUrl;
   }
 
   isEnabled(): boolean {
@@ -115,7 +161,7 @@ class R2StorageService {
 
   async uploadDocument(params: UploadDocumentParams): Promise<{ key: string; url?: string | null }> {
     if (!this.client || !this.bucketName) {
-      throw new Error("Cloudflare R2 is not configured.");
+      throw new Error("S3/R2 object storage is not configured.");
     }
 
     await this.client.send(
@@ -148,6 +194,26 @@ class R2StorageService {
       return true;
     } catch {
       return false;
+    }
+  }
+
+  async findDocumentKey(prefix: string): Promise<string | null> {
+    if (!this.client || !this.bucketName) {
+      return null;
+    }
+
+    try {
+      const response = await this.client.send(
+        new ListObjectsV2Command({
+          Bucket: this.bucketName,
+          Prefix: prefix,
+          MaxKeys: 1,
+        })
+      );
+
+      return response.Contents?.[0]?.Key || null;
+    } catch {
+      return null;
     }
   }
 

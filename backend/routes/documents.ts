@@ -1,17 +1,9 @@
 import { Router, Response } from "express";
-import path from "path";
-import fs from "fs";
 import { authenticateToken, AuthenticatedRequest } from "../middleware/auth";
 import { Logger } from "../middleware/logger";
 import { R2Storage } from "../services/r2Storage";
 
 const router = Router();
-const UPLOADS_DIR = path.join(process.cwd(), "uploads");
-
-// Ensure uploads folder exists
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-}
 
 type DriveScanItem = {
   id: string;
@@ -279,27 +271,25 @@ router.post("/upload", authenticateToken as any, async (req: AuthenticatedReques
     const safeFileName = `${id}_${sanitizedName}`;
     const contentType = inferContentType(sanitizedName);
 
-    if (R2Storage.isEnabled()) {
-      const uploadResult = await R2Storage.uploadDocument({
-        key: safeFileName,
-        body: buffer,
-        contentType,
-      });
-
-      Logger.info(`Uploaded document to Cloudflare R2: ${safeFileName} (${buffer.length} bytes) for user: ${req.user?.email}`);
-      return res.json({
-        success: true,
-        fileName: safeFileName,
-        storage: "r2",
-        url: uploadResult.url || undefined,
+    if (!R2Storage.isEnabled()) {
+      return res.status(503).json({
+        error: "S3/R2 object storage chưa được cấu hình. Vui lòng thiết lập STORAGE_S3_ACCESS_KEY_ID, STORAGE_S3_SECRET_ACCESS_KEY, STORAGE_S3_BUCKET (hoặc các biến CF_R2_* tương thích)."
       });
     }
 
-    const destinationPath = path.join(UPLOADS_DIR, safeFileName);
-    fs.writeFileSync(destinationPath, buffer);
+    const uploadResult = await R2Storage.uploadDocument({
+      key: safeFileName,
+      body: buffer,
+      contentType,
+    });
 
-    Logger.info(`Saved uploaded document locally: ${safeFileName} (${buffer.length} bytes) for user: ${req.user?.email}`);
-    return res.json({ success: true, fileName: safeFileName, storage: "local" });
+    Logger.info(`Uploaded document to object storage: ${safeFileName} (${buffer.length} bytes) for user: ${req.user?.email}`);
+    return res.json({
+      success: true,
+      fileName: safeFileName,
+      storage: "r2",
+      url: uploadResult.url || undefined,
+    });
   } catch (err) {
     next(err);
   }
@@ -358,48 +348,25 @@ router.get("/download/:id", authenticateToken as any, async (req: AuthenticatedR
   try {
     const { id } = req.params;
 
-    if (R2Storage.isEnabled()) {
-      const localFiles = fs.existsSync(UPLOADS_DIR) ? fs.readdirSync(UPLOADS_DIR) : [];
-      const localMatch = localFiles.find(f => f.startsWith(`${id}_`));
-
-      if (localMatch) {
-        const r2Object = await R2Storage.downloadDocument(localMatch);
-        if (r2Object) {
-          const originalName = localMatch.substring(id.length + 1);
-          Logger.info(`Document download triggered from Cloudflare R2: ${localMatch}`);
-          res.setHeader("Content-Type", r2Object.contentType || inferContentType(originalName));
-          res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(originalName)}"`);
-          return res.send(r2Object.body);
-        }
-      }
+    if (!R2Storage.isEnabled()) {
+      return res.status(503).send("S3/R2 object storage is not configured");
     }
 
-    if (!fs.existsSync(UPLOADS_DIR)) {
+    const objectKey = await R2Storage.findDocumentKey(`${id}_`);
+    if (!objectKey) {
       return res.status(404).send("File not found");
     }
 
-    const files = fs.readdirSync(UPLOADS_DIR);
-    const file = files.find(f => f.startsWith(`${id}_`));
-    if (!file) {
+    const storedObject = await R2Storage.downloadDocument(objectKey);
+    if (!storedObject) {
       return res.status(404).send("File not found");
     }
 
-    if (R2Storage.isEnabled()) {
-      const r2Object = await R2Storage.downloadDocument(file);
-      if (r2Object) {
-        const originalName = file.substring(id.length + 1);
-        Logger.info(`Document download triggered from Cloudflare R2: ${file}`);
-        res.setHeader("Content-Type", r2Object.contentType || inferContentType(originalName));
-        res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(originalName)}"`);
-        return res.send(r2Object.body);
-      }
-    }
-
-    const filePath = path.join(UPLOADS_DIR, file);
-    const originalName = file.substring(id.length + 1);
-
-    Logger.info(`Document download triggered from local storage: ${file}`);
-    return res.download(filePath, originalName);
+    const originalName = objectKey.startsWith(`${id}_`) ? objectKey.slice(id.length + 1) : objectKey;
+    Logger.info(`Document download triggered from object storage: ${objectKey}`);
+    res.setHeader("Content-Type", storedObject.contentType || inferContentType(originalName));
+    res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(originalName)}"`);
+    return res.send(storedObject.body);
   } catch (err) {
     next(err);
   }

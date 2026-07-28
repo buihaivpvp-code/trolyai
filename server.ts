@@ -4,8 +4,6 @@
  */
 
 import express from "express";
-import path from "path";
-import fs from "fs";
 import dotenv from "dotenv";
 import { GoogleGenAI, Type } from "@google/genai";
 import { createServer as createViteServer } from "vite";
@@ -35,14 +33,6 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 // Apply Centralized Request Logger Middleware
 app.use(requestLogger);
 
-const UPLOADS_DIR = isVercel ? path.join("/tmp", "uploads") : path.join(process.cwd(), "uploads");
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-}
-
-const AI_SAMPLE_KNOWLEDGE_PATH = isVercel
-  ? path.join("/tmp", "data", "ai_sample_knowledge.json")
-  : path.join(process.cwd(), "data", "ai_sample_knowledge.json");
 
 type SlideSample = {
   id: string;
@@ -103,22 +93,7 @@ function extractFirstNumber(value: string): number | null {
 }
 
 function loadAiSampleKnowledge(): AiSampleKnowledge {
-  try {
-    if (!fs.existsSync(AI_SAMPLE_KNOWLEDGE_PATH)) {
-      return { slides: [], tests: [] };
-    }
-
-    const raw = fs.readFileSync(AI_SAMPLE_KNOWLEDGE_PATH, "utf8");
-    const parsed = JSON.parse(raw) as Partial<AiSampleKnowledge>;
-
-    return {
-      slides: Array.isArray(parsed.slides) ? parsed.slides : [],
-      tests: Array.isArray(parsed.tests) ? parsed.tests : []
-    };
-  } catch (error) {
-    console.warn("Failed to load AI sample knowledge base:", error);
-    return { slides: [], tests: [] };
-  }
+  return { slides: [], tests: [] };
 }
 
 function selectSlideSamples(params: {
@@ -225,20 +200,18 @@ app.get(["/api/backend", "/backend"], (_req, res) => {
   const students = Database.getStudents();
   const users = Database.getUsers();
   const studentFiles = [
-    "data/students_base.json",
-    "data/grades.json",
-    "data/psychological_profiles.json",
-    "data/semi_boarding_profiles.json",
-    "data/talent_profiles.json",
-    "data/attendances.json",
-    "data/behavior_counts.json",
-    "data/diaries.json",
-    "data/monthly_grades.json"
+    "Supabase: students_base",
+    "Supabase: grades",
+    "Supabase: psychological_profiles",
+    "Supabase: semi_boarding_profiles",
+    "Supabase: talent_profiles",
+    "Supabase: attendances",
+    "Supabase: behavior_counts",
+    "Supabase: diaries",
+    "Supabase: monthly_grades"
   ];
-  const teacherFiles = ["data/users.json"];
-  const uploadFiles = fs.existsSync(UPLOADS_DIR)
-    ? fs.readdirSync(UPLOADS_DIR).sort((a, b) => a.localeCompare(b, "vi"))
-    : [];
+  const teacherFiles = ["Supabase: users"];
+  const uploadFiles: string[] = [];
 
   const studentsMarkup = students.length
     ? students
@@ -282,7 +255,7 @@ app.get(["/api/backend", "/backend"], (_req, res) => {
           `
         )
         .join("")
-    : `<li>Chưa có file nào trong thư mục <code>uploads/</code>.</li>`;
+    : `<li>Chưa có file nào trong <code>Cloudflare R2</code>.</li>`;
 
   const studentFilesMarkup = studentFiles
     .map((file) => `<li><code>${file}</code></li>`)
@@ -2760,8 +2733,14 @@ function ensureFrontendSetup(): Promise<void> {
   return setupFrontendPromise;
 }
 
-void ensureFrontendSetup();
+void ensureFrontendSetup().catch((error) => {
+  console.error("Failed to initialize frontend middleware:", error);
+  if (!isVercel) {
+    process.exit(1);
+  }
+});
 
+export default app;
 export { app };
 
 async function startServer() {
