@@ -1,5 +1,5 @@
 import { Router, Response } from "express";
-import { Database } from "../services/db";
+import { Database } from "../services/db.js";
 import { authenticateToken, AuthenticatedRequest } from "../middleware/auth";
 import { validateJournal } from "../middleware/validator";
 import { Logger } from "../middleware/logger";

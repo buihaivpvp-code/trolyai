@@ -15,14 +15,14 @@ import { AssessmentValue } from "./src/types";
 dotenv.config();
 
 // Import production-grade backend components
-import { Database } from "./backend/services/db";
-import { requestLogger } from "./backend/middleware/logger";
-import { globalErrorHandler } from "./backend/middleware/errorHandler";
-import { authenticateToken } from "./backend/middleware/auth";
-import authRouter from "./backend/routes/auth";
-import studentsRouter from "./backend/routes/students";
-import journalRouter from "./backend/routes/journal";
-import documentsRouter from "./backend/routes/documents";
+import { Database } from "./backend/services/db.js";
+import { requestLogger } from "./backend/middleware/logger.js";
+import { globalErrorHandler } from "./backend/middleware/errorHandler.js";
+import { authenticateToken } from "./backend/middleware/auth.js";
+import authRouter from "./backend/routes/auth.js";
+import studentsRouter from "./backend/routes/students.js";
+import journalRouter from "./backend/routes/journal.js";
+import documentsRouter from "./backend/routes/documents.js";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 2630;
