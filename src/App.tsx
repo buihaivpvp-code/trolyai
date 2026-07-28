@@ -45,6 +45,62 @@ const formatVietnameseDate = (value?: string | null) => {
   return `${day}/${month}/${year}`;
 };
 
+const WORKSPACE_TABS: Array<{
+  id: TabID;
+  label: string;
+  shortLabel: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+  iconClassName?: string;
+}> = [
+  {
+    id: "manager",
+    label: "Danh Sách Lớp Học",
+    shortLabel: "Lớp học",
+    description: "Quản lý học sinh, hồ sơ lớp và hoạt động chủ nhiệm theo từng lớp.",
+    icon: Users
+  },
+  {
+    id: "repository",
+    label: "Kho Tài Liệu",
+    shortLabel: "Tài liệu",
+    description: "Lưu trữ, tra cứu và tổ chức tài liệu giảng dạy dùng chung.",
+    icon: Library
+  },
+  {
+    id: "slides",
+    label: "AI Tạo Slide Bài Giảng",
+    shortLabel: "Tạo slide",
+    description: "Tạo bộ slide bài giảng nhanh từ nội dung môn học với hỗ trợ AI.",
+    icon: Sparkles,
+    iconClassName: "text-amber-500"
+  },
+  {
+    id: "tests",
+    label: "AI Tạo Đề Kiểm Tra",
+    shortLabel: "Đề kiểm tra",
+    description: "Sinh đề kiểm tra, câu hỏi và cấu trúc đánh giá theo mục tiêu học tập.",
+    icon: ClipboardCheck,
+    iconClassName: "text-indigo-500"
+  },
+  {
+    id: "classroom_games",
+    label: "Kiểm tra bài cũ",
+    shortLabel: "Bài cũ",
+    description: "Chuẩn bị hoạt động hỏi đáp, trò chơi và tương tác ôn bài trên lớp.",
+    icon: Award,
+    iconClassName: "text-rose-500"
+  },
+  {
+    id: "journal",
+    label: "Sổ Đầu Bài AI",
+    shortLabel: "Sổ đầu bài",
+    description: "Ghi nhận nhật ký lớp học, nhận xét và tổng hợp diễn biến từng buổi học.",
+    icon: FileText,
+    iconClassName: "text-emerald-500"
+  }
+];
+
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabID>("manager");
   const [apiOnline, setApiOnline] = useState(true);
@@ -327,6 +383,8 @@ export default function App() {
     );
   }
 
+  const activeWorkspace = WORKSPACE_TABS.find((tab) => tab.id === activeTab) ?? WORKSPACE_TABS[0];
+
   return (
     <div className="min-h-screen bg-slate-50/50 flex flex-col font-sans tracking-tight antialiased selection:bg-indigo-500 selection:text-white" id="eduai-app-root">
       
@@ -394,128 +452,144 @@ export default function App() {
         </div>
       </header>
 
-      {/* 3. NAVIGATION TABS ROW */}
-      <nav className="bg-white border-b border-slate-200/80 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex scrollbar-none overflow-x-auto gap-1 py-2">
-            
-            {/* Tab 1: Danh Sách Lớp Học */}
-            <button
-              id="tab-btn-manager"
-              onClick={() => setActiveTab("manager")}
-              className={`py-2 px-3.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                activeTab === "manager"
-                  ? "bg-slate-900 text-white shadow-sm"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-              }`}
-            >
-              <Users className="w-4 h-4" />
-              Danh Sách Lớp Học
-            </button>
+      {/* 3. BACKEND WORKSPACE LAYOUT */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        <div className="grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)] gap-6 items-start">
+          <aside className="xl:sticky xl:top-6 self-start">
+            <div className="bg-slate-950 text-white rounded-[28px] p-5 shadow-[0_24px_80px_rgba(15,23,42,0.22)] overflow-hidden relative">
+              <div className="absolute inset-x-0 top-0 h-32 bg-indigo-500/10 blur-3xl pointer-events-none" />
 
-            {/* Tab 5: Kho tài liệu */}
-            <button
-              id="tab-btn-repository"
-              onClick={() => setActiveTab("repository")}
-              className={`py-2 px-3.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                activeTab === "repository"
-                  ? "bg-slate-900 text-white shadow-sm"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-              }`}
-            >
-              <Library className="w-4 h-4" />
-              Kho Tài Liệu
-            </button>
+              <div className="relative z-10 space-y-5">
+                <div className="space-y-3">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-slate-300">
+                    <FolderKanban className="w-3.5 h-3.5 text-indigo-300" />
+                    Backend workspace
+                  </div>
 
-            {/* Tab 6: AI Tạo Slide bài giảng */}
-            <button
-              id="tab-btn-slides"
-              onClick={() => setActiveTab("slides")}
-              className={`py-2 px-3.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                activeTab === "slides"
-                  ? "bg-slate-900 text-white shadow-sm"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-              }`}
-            >
-              <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" />
-              AI Tạo Slide Bài Giảng
-            </button>
+                  <div className="space-y-2">
+                    <h2 className="text-xl font-black tracking-tight text-white">Khu chức năng quản trị</h2>
+                    <p className="text-sm leading-relaxed text-slate-300">
+                      Chọn một nhóm chức năng ở cột trái, toàn bộ nội dung chi tiết sẽ hiển thị ở vùng làm việc bên phải.
+                    </p>
+                  </div>
+                </div>
 
-            {/* Tab 7: AI Tạo Đề Kiểm Tra */}
-            <button
-              id="tab-btn-tests"
-              onClick={() => setActiveTab("tests")}
-              className={`py-2 px-3.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                activeTab === "tests"
-                  ? "bg-slate-900 text-white shadow-sm"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-              }`}
-            >
-              <ClipboardCheck className="w-4 h-4 text-indigo-500" />
-              AI Tạo Đề Kiểm Tra
-            </button>
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="flex items-center gap-3">
+                    {user.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={user.name}
+                        className="w-11 h-11 rounded-2xl object-cover ring-1 ring-white/15"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-11 h-11 rounded-2xl bg-indigo-500/20 text-white flex items-center justify-center font-black text-sm ring-1 ring-white/10">
+                        {user.name ? user.name.split(" ").pop()?.slice(0, 2).toUpperCase() : "GV"}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-white truncate">{user.name}</p>
+                      <p className="text-xs text-slate-400 truncate">{user.role === "admin" ? "Quản trị cấp cao" : `Giáo viên chủ nhiệm lớp ${user.classCode}`}</p>
+                    </div>
+                  </div>
 
-            {/* Tab 8: Kiểm tra bài cũ */}
-            <button
-              id="tab-btn-games"
-              onClick={() => setActiveTab("classroom_games")}
-              className={`py-2 px-3.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                activeTab === "classroom_games"
-                  ? "bg-slate-900 text-white shadow-sm"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-              }`}
-            >
-              <Award className="w-4 h-4 text-rose-500" />
-               Kiểm tra bài cũ
-            </button>
+                  <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                    <div className="rounded-2xl bg-white/5 border border-white/10 px-3 py-2.5">
+                      <p className="text-slate-400">Trạng thái</p>
+                      <p className={`mt-1 font-semibold ${apiOnline ? "text-emerald-300" : "text-rose-300"}`}>{apiOnline ? "Online" : "Offline"}</p>
+                    </div>
+                    <div className="rounded-2xl bg-white/5 border border-white/10 px-3 py-2.5">
+                      <p className="text-slate-400">Đang mở</p>
+                      <p className="mt-1 font-semibold text-white">{activeWorkspace.shortLabel}</p>
+                    </div>
+                  </div>
+                </div>
 
-            {/* Tab 9: Sổ đầu bài AI */}
-            <button
-              id="tab-btn-journal"
-              onClick={() => setActiveTab("journal")}
-              className={`py-2 px-3.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                activeTab === "journal"
-                  ? "bg-slate-900 text-white shadow-sm"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-              }`}
-            >
-              <FileText className="w-4 h-4 text-emerald-500" />
-              Sổ Đầu Bài AI 📝
-            </button>
+                <div className="space-y-2">
+                  {WORKSPACE_TABS.map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.id;
 
-          </div>
+                    return (
+                      <button
+                        key={tab.id}
+                        id={`tab-btn-${tab.id}`}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`w-full rounded-2xl px-4 py-3.5 text-left transition-all cursor-pointer border ${
+                          isActive
+                            ? "bg-white text-slate-950 border-white shadow-[0_18px_40px_rgba(255,255,255,0.14)]"
+                            : "bg-white/5 text-slate-200 border-white/10 hover:bg-white/10 hover:border-white/20"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`mt-0.5 shrink-0 rounded-xl p-2 ${isActive ? "bg-slate-100" : "bg-white/10"}`}>
+                            <Icon className={`w-4 h-4 ${isActive ? "text-slate-900" : tab.iconClassName ?? "text-slate-200"}`} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className={`text-sm font-bold ${isActive ? "text-slate-950" : "text-white"}`}>{tab.label}</p>
+                            <p className={`mt-1 text-xs leading-relaxed ${isActive ? "text-slate-600" : "text-slate-400"}`}>{tab.description}</p>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <section className="min-w-0 space-y-4">
+            <div className="bg-white border border-slate-200 rounded-[28px] p-5 sm:p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div className="space-y-2 max-w-3xl">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Chi tiết chức năng</p>
+                  <h3 className="text-2xl font-black tracking-tight text-slate-950 text-wrap-balance">{activeWorkspace.label}</h3>
+                  <p className="text-sm leading-relaxed text-slate-600">{activeWorkspace.description}</p>
+                </div>
+
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-600">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    Phiên làm việc an toàn
+                  </div>
+                  <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-600">
+                    <Database className="w-3.5 h-3.5 text-indigo-600" />
+                    Đồng bộ với backend
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-[32px] p-4 sm:p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)] min-h-[calc(100vh-16rem)]">
+              {activeTab === "manager" && (
+                <StudentManager 
+                  user={user}
+                />
+              )}
+
+              {activeTab === "repository" && (
+                <DocumentRepository user={user} />
+              )}
+
+              {activeTab === "slides" && (
+                <SlideGenerator user={user} />
+              )}
+
+              {activeTab === "tests" && (
+                <AITestCreator user={user} />
+              )}
+
+              {activeTab === "classroom_games" && (
+                <ClassroomGames user={user} />
+              )}
+
+              {activeTab === "journal" && (
+                <ClassJournal user={user} />
+              )}
+            </div>
+          </section>
         </div>
-      </nav>
-
-      {/* 4. WORKSPACE MAIN CONTENT ELEMENT */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        {activeTab === "manager" && (
-          <StudentManager 
-            user={user}
-          />
-        )}
-
-        {activeTab === "repository" && (
-          <DocumentRepository user={user} />
-        )}
-
-        {activeTab === "slides" && (
-          <SlideGenerator user={user} />
-        )}
-
-        {activeTab === "tests" && (
-          <AITestCreator user={user} />
-        )}
-
-        {activeTab === "classroom_games" && (
-          <ClassroomGames user={user} />
-        )}
-
-        {activeTab === "journal" && (
-          <ClassJournal user={user} />
-        )}
-
       </main>
 
       {/* Footer */}

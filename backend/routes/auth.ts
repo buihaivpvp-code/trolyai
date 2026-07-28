@@ -1,21 +1,67 @@
 import { Router, Response } from "express";
 import { Database } from "../services/db";
-import { 
-  hashPassword, 
-  generateToken, 
-  authenticateToken, 
-  AuthenticatedRequest 
+import {
+  generateToken,
+  authenticateToken,
+  AuthenticatedRequest
 } from "../middleware/auth";
 import { Logger } from "../middleware/logger";
+import { getSupabaseClient, isSupabaseConfigured } from "../services/supabase";
 
 const router = Router();
+
+function buildLocalUserFromAuth(params: {
+  existingUser?: any;
+  authUserId: string;
+  email: string;
+  name?: string;
+  classCode?: string;
+}) {
+  const { existingUser, authUserId, email, name, classCode } = params;
+
+  return {
+    id: existingUser?.id || authUserId,
+    email: email.toLowerCase().trim(),
+    passwordHash: existingUser?.passwordHash || "",
+    name: (name || existingUser?.name || "Giáo viên").trim(),
+    role: existingUser?.role || "teacher" as const,
+    classCode: (classCode || existingUser?.classCode || "4A").toUpperCase().trim(),
+    avatar: existingUser?.avatar,
+    phone: existingUser?.phone,
+    dob: existingUser?.dob,
+    workplace: existingUser?.workplace,
+    experience: existingUser?.experience,
+    achievements: existingUser?.achievements,
+    bio: existingUser?.bio,
+    hasCompletedOnboarding: existingUser?.hasCompletedOnboarding ?? false
+  };
+}
+
+function issueAppAuthResponse(user: any, rememberMe?: boolean) {
+  const tokenPayload = {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    classCode: user.classCode
+  };
+
+  const expiryMs = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
+  const token = generateToken(tokenPayload, expiryMs);
+  const { passwordHash, ...userWithoutPassword } = user;
+
+  return {
+    token,
+    user: userWithoutPassword
+  };
+}
 
 /**
  * @route POST /api/auth/register
  * @desc Register a new teacher or school account
  * @access Public
  */
-router.post("/register", (req, res, next) => {
+router.post("/register", async (req, res, next) => {
   try {
     const { email, password, name, classCode = "4A", rememberMe } = req.body;
 
@@ -27,44 +73,61 @@ router.post("/register", (req, res, next) => {
       return res.status(400).json({ error: "Mật khẩu phải chứa ít nhất 6 ký tự." });
     }
 
-    const users = Database.getUsers();
-    const existing = users.find(u => u.email.toLowerCase() === email.toLowerCase().trim());
-    
-    if (existing) {
-      return res.status(400).json({ error: "Email này đã được sử dụng bởi giáo viên khác." });
+    if (!isSupabaseConfigured()) {
+      return res.status(500).json({ error: "Supabase chưa được cấu hình trên máy chủ." });
     }
 
-    const newUser = {
-      id: "usr-" + Math.random().toString(36).substring(2, 9),
-      email: email.toLowerCase().trim(),
-      passwordHash: hashPassword(password),
-      name: name.trim(),
-      role: "teacher" as const, // Default role for registering users
-      classCode: classCode.toUpperCase().trim(),
-      hasCompletedOnboarding: false
-    };
+    const supabase = getSupabaseClient();
+    const cleanEmail = email.toLowerCase().trim();
+    const cleanName = name.trim();
+    const cleanClassCode = classCode.toUpperCase().trim();
 
-    users.push(newUser);
+    const { data, error } = await supabase.auth.signUp({
+      email: cleanEmail,
+      password,
+      options: {
+        data: {
+          name: cleanName,
+          classCode: cleanClassCode
+        }
+      }
+    });
+
+    if (error) {
+      Logger.error(`Supabase register failed for ${cleanEmail}: ${error.message}`);
+      return res.status(400).json({ error: error.message || "Không thể đăng ký tài khoản." });
+    }
+
+    const authUserId = data.user?.id;
+    if (!authUserId) {
+      return res.status(500).json({ error: "Đăng ký thành công nhưng không nhận được thông tin người dùng từ Supabase." });
+    }
+
+    const users = Database.getUsers();
+    const existing = users.find((u) => u.email.toLowerCase() === cleanEmail);
+
+    const localUser = buildLocalUserFromAuth({
+      existingUser: existing,
+      authUserId,
+      email: cleanEmail,
+      name: cleanName,
+      classCode: cleanClassCode
+    });
+
+    if (existing) {
+      const userIndex = users.findIndex((u) => u.email.toLowerCase() === cleanEmail);
+      users[userIndex] = localUser;
+    } else {
+      users.push(localUser);
+    }
     Database.saveUsers(users);
 
-    const tokenPayload = {
-      id: newUser.id,
-      email: newUser.email,
-      name: newUser.name,
-      role: newUser.role,
-      classCode: newUser.classCode
-    };
-
-    const expiryMs = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
-    const token = generateToken(tokenPayload, expiryMs);
-    Logger.info(`Registered new user account: ${newUser.email}`);
-
-    const { passwordHash, ...userWithoutPassword } = newUser;
+    const authResponse = issueAppAuthResponse(localUser, rememberMe);
+    Logger.info(`Registered new Supabase-backed user account: ${localUser.email}`);
 
     res.status(201).json({
       message: "Đăng ký tài khoản thành công!",
-      token,
-      user: userWithoutPassword
+      ...authResponse
     });
   } catch (err) {
     next(err);
@@ -76,7 +139,7 @@ router.post("/register", (req, res, next) => {
  * @desc Login with credentials to receive a session JWT-style token
  * @access Public
  */
-router.post("/login", (req, res, next) => {
+router.post("/login", async (req, res, next) => {
   try {
     const { email, password, rememberMe } = req.body;
 
@@ -84,36 +147,54 @@ router.post("/login", (req, res, next) => {
       return res.status(400).json({ error: "Vui lòng nhập email và mật khẩu." });
     }
 
+    if (!isSupabaseConfigured()) {
+      return res.status(500).json({ error: "Supabase chưa được cấu hình trên máy chủ." });
+    }
+
+    const supabase = getSupabaseClient();
+    const cleanEmail = email.toLowerCase().trim();
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
+      password
+    });
+
+    if (error || !data.user) {
+      Logger.error(`Supabase login failed for ${cleanEmail}: ${error?.message || "Unknown error"}`);
+      return res.status(401).json({ error: "Email hoặc mật khẩu không chính xác." });
+    }
+
     const users = Database.getUsers();
-    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase().trim());
+    const existing = users.find((u) => u.email.toLowerCase() === cleanEmail);
 
-    if (!user) {
-      return res.status(401).json({ error: "Email hoặc mật khẩu không chính xác." });
+    const localUser = buildLocalUserFromAuth({
+      existingUser: existing,
+      authUserId: data.user.id,
+      email: cleanEmail,
+      name:
+        typeof data.user.user_metadata?.name === "string"
+          ? data.user.user_metadata.name
+          : existing?.name,
+      classCode:
+        typeof data.user.user_metadata?.classCode === "string"
+          ? data.user.user_metadata.classCode
+          : existing?.classCode
+    });
+
+    if (existing) {
+      const userIndex = users.findIndex((u) => u.email.toLowerCase() === cleanEmail);
+      users[userIndex] = localUser;
+    } else {
+      users.push(localUser);
     }
+    Database.saveUsers(users);
 
-    const matched = hashPassword(password) === user.passwordHash;
-    if (!matched) {
-      return res.status(401).json({ error: "Email hoặc mật khẩu không chính xác." });
-    }
-
-    const tokenPayload = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      classCode: user.classCode
-    };
-
-    const expiryMs = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
-    const token = generateToken(tokenPayload, expiryMs);
-    Logger.info(`User logged in: ${user.email} with role ${user.role}`);
-
-    const { passwordHash, ...userWithoutPassword } = user;
+    const authResponse = issueAppAuthResponse(localUser, rememberMe);
+    Logger.info(`User logged in via Supabase: ${localUser.email} with role ${localUser.role}`);
 
     res.json({
       message: "Đăng nhập thành công!",
-      token,
-      user: userWithoutPassword
+      ...authResponse
     });
   } catch (err) {
     next(err);
