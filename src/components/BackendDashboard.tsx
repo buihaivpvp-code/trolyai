@@ -296,7 +296,7 @@ export default function BackendDashboard() {
         <header className="border-b border-white/10 pb-6">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl space-y-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-200">
+              <div className="inline-flex items-center gap-2 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-200">
                 <Network className="h-3.5 w-3.5" />
                 Backend Workspace
               </div>
@@ -312,15 +312,15 @@ export default function BackendDashboard() {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+              <div className="px-4 py-3">
                 <p className="text-xs text-slate-400">Tổng chức năng</p>
                 <p className="mt-1 text-2xl font-bold text-white">06</p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+              <div className="px-4 py-3">
                 <p className="text-xs text-slate-400">Trang hiện tại</p>
                 <p className="mt-1 text-sm font-semibold text-cyan-200">/backend</p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+              <div className="px-4 py-3">
                 <p className="text-xs text-slate-400">Chế độ</p>
                 <p className="mt-1 text-sm font-semibold text-emerald-200">Vận hành nội bộ</p>
               </div>
@@ -329,7 +329,7 @@ export default function BackendDashboard() {
         </header>
 
         <main className="mt-6 grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-          <aside className="rounded-3xl border border-white/10 bg-white/5 p-3">
+          <aside className="p-3">
             <div className="border-b border-white/10 px-3 pb-3 pt-2">
               <p className="text-sm font-semibold text-white">Danh sách chức năng</p>
               <p className="mt-1 text-sm leading-6 text-slate-400">
@@ -347,15 +347,15 @@ export default function BackendDashboard() {
                     key={feature.id}
                     type="button"
                     onClick={() => setActiveFeatureId(feature.id)}
-                    className={`w-full rounded-2xl border px-4 py-4 text-left transition-colors ${
+                    className={`w-full px-4 py-4 text-left transition-colors ${
                       isActive
-                        ? "border-cyan-400/35 bg-cyan-400/12 text-white"
-                        : "border-white/10 bg-slate-900/45 text-slate-200 hover:border-white/20 hover:bg-white/6"
+                        ? "bg-cyan-400/12 text-white"
+                        : "text-slate-200 hover:bg-white/6"
                     }`}
                   >
                     <div className="flex items-start gap-3">
                       <div
-                        className={`mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${feature.accentClass} text-white shadow-lg`}
+                        className={`mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center bg-gradient-to-br ${feature.accentClass} text-white`}
                       >
                         <Icon className="h-5 w-5" />
                       </div>
@@ -363,11 +363,11 @@ export default function BackendDashboard() {
                         <div className="flex items-center justify-between gap-3">
                           <h2 className="text-sm font-bold">{feature.title}</h2>
                           <span
-                            className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
-                              isActive
-                                ? "bg-cyan-200/15 text-cyan-100"
-                                : "bg-white/8 text-slate-300"
-                            }`}
+                             className={`px-2.5 py-1 text-[10px] font-bold ${
+                               isActive
+                                 ? "text-cyan-100"
+                                 : "text-slate-300"
+                             }`}
                           >
                             {feature.status}
                           </span>
@@ -381,11 +381,11 @@ export default function BackendDashboard() {
             </div>
           </aside>
 
-          <section className="rounded-3xl border border-white/10 bg-white/5 p-5 sm:p-6">
+          <section className="p-5 sm:p-6">
             <div className="flex flex-col gap-5 border-b border-white/10 pb-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex items-start gap-4">
                 <div
-                  className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${activeFeature.accentClass} text-white shadow-lg`}
+                  className={`flex h-14 w-14 shrink-0 items-center justify-center bg-gradient-to-br ${activeFeature.accentClass} text-white`}
                 >
                   <ActiveIcon className="h-6 w-6" />
                 </div>
@@ -400,7 +400,7 @@ export default function BackendDashboard() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-slate-900/60 px-4 py-3">
+              <div className="px-4 py-3">
                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                   <Activity className="h-4 w-4 text-emerald-300" />
                   Trạng thái chức năng
@@ -411,7 +411,7 @@ export default function BackendDashboard() {
 
             <div className="mt-5 grid gap-4 md:grid-cols-3">
               {activeFeature.metrics.map((metric) => (
-                <div key={metric.label} className="rounded-2xl border border-white/10 bg-slate-900/50 p-4">
+                <div key={metric.label} className="p-4">
                   <p className="text-xs text-slate-400">{metric.label}</p>
                   <p className="mt-2 text-xl font-bold text-white">{metric.value}</p>
                 </div>
@@ -421,7 +421,7 @@ export default function BackendDashboard() {
             <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_320px]">
               <div className="space-y-4">
                 {activeFeature.details.sections.map((section) => (
-                  <article key={section.title} className="rounded-2xl border border-white/10 bg-slate-900/45 p-5">
+                  <article key={section.title} className="p-5">
                     <h3 className="text-lg font-bold text-white">{section.title}</h3>
                     <p className="mt-2 text-sm leading-7 text-slate-300">{section.body}</p>
                   </article>
@@ -429,7 +429,7 @@ export default function BackendDashboard() {
               </div>
 
               <aside className="space-y-4">
-                <div className="rounded-2xl border border-white/10 bg-slate-900/55 p-5">
+                <div className="p-5">
                   <div className="flex items-center gap-2 text-sm font-semibold text-white">
                     <ShieldCheck className="h-4 w-4 text-cyan-300" />
                     Điểm nhấn chức năng
@@ -444,7 +444,7 @@ export default function BackendDashboard() {
                   </ul>
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 p-5">
+                <div className="p-5">
                   <div className="flex items-center gap-2 text-sm font-semibold text-white">
                     <FileStack className="h-4 w-4 text-amber-300" />
                     Liên kết điều hướng
@@ -452,14 +452,14 @@ export default function BackendDashboard() {
                   <div className="mt-4 space-y-3">
                     <a
                       href="/"
-                      className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-100 transition-colors hover:border-cyan-400/30 hover:bg-white/8"
+                      className="flex items-center justify-between px-4 py-3 text-sm font-semibold text-slate-100 transition-colors hover:bg-white/8"
                     >
                       Sang frontend chính
                       <Sparkles className="h-4 w-4 text-cyan-200" />
                     </a>
                     <a
                       href="/backend"
-                      className="flex items-center justify-between rounded-2xl border border-cyan-400/25 bg-cyan-400/10 px-4 py-3 text-sm font-semibold text-cyan-100"
+                      className="flex items-center justify-between bg-cyan-400/10 px-4 py-3 text-sm font-semibold text-cyan-100"
                     >
                       Đang ở backend
                       <Database className="h-4 w-4 text-cyan-200" />
@@ -467,7 +467,7 @@ export default function BackendDashboard() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+                <div className="p-5">
                   <div className="flex items-center gap-2 text-sm font-semibold text-white">
                     <Wrench className="h-4 w-4 text-indigo-300" />
                     Ghi chú bố cục
