@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
-import { Database } from "../services/db.js";
 
 const SECRET = process.env.JWT_SECRET || "eduai_secret_jwt_signature_key_2026";
 

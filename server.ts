@@ -15,7 +15,7 @@ import { AssessmentValue } from "./src/types";
 dotenv.config();
 
 // Import production-grade backend components
-import { Database } from "./backend/services/db.js";
+import { Database } from "./backend/services/database.js";
 import { requestLogger } from "./backend/middleware/logger.js";
 import { globalErrorHandler } from "./backend/middleware/errorHandler.js";
 import { authenticateToken } from "./backend/middleware/auth.js";
