@@ -17,7 +17,7 @@ import {
   AssessmentValue
 } from "../models/schema";
 
-const DATA_DIR = path.join(process.cwd(), "data");
+const DATA_DIR = process.env.VERCEL ? path.join("/tmp", "data") : path.join(process.cwd(), "data");
 
 // Initialize directories if they do not exist
 if (!fs.existsSync(DATA_DIR)) {

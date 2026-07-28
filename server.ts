@@ -26,6 +26,7 @@ import documentsRouter from "./backend/routes/documents";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 2630;
+const isVercel = Boolean(process.env.VERCEL);
 
 // Set body size limits to allow base64 uploads of large documents (PDFs, PPTX, etc.)
 app.use(express.json({ limit: "50mb" }));
@@ -34,12 +35,14 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 // Apply Centralized Request Logger Middleware
 app.use(requestLogger);
 
-const UPLOADS_DIR = path.join(process.cwd(), "uploads");
+const UPLOADS_DIR = isVercel ? path.join("/tmp", "uploads") : path.join(process.cwd(), "uploads");
 if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
-const AI_SAMPLE_KNOWLEDGE_PATH = path.join(process.cwd(), "data", "ai_sample_knowledge.json");
+const AI_SAMPLE_KNOWLEDGE_PATH = isVercel
+  ? path.join("/tmp", "data", "ai_sample_knowledge.json")
+  : path.join(process.cwd(), "data", "ai_sample_knowledge.json");
 
 type SlideSample = {
   id: string;
@@ -2758,7 +2761,9 @@ async function startServer() {
   });
 }
 
-startServer().catch((error) => {
-  console.error("Failed to start merged server:", error);
-  process.exit(1);
-});
+if (!isVercel) {
+  startServer().catch((error) => {
+    console.error("Failed to start merged server:", error);
+    process.exit(1);
+  });
+}
