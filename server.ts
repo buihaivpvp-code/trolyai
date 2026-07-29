@@ -2735,12 +2735,6 @@ function ensureFrontendSetup(): Promise<void> {
   return setupFrontendPromise;
 }
 
-void ensureFrontendSetup().catch((error) => {
-  console.error("Failed to initialize frontend middleware:", error);
-  if (!isVercel) {
-    process.exit(1);
-  }
-});
 
 export default app;
 export { app };
