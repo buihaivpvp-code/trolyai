@@ -210,6 +210,37 @@ app.use("/api/students", studentsRouter);
 app.use("/api/journal", journalRouter);
 app.use("/api/documents", documentsRouter);
 
+// --- System AI Config Routes ---
+let customSystemAiConfig = {
+  apiKey: "",
+  model: "gemini-3.5-flash",
+  fallbackModel: "gemini-3.1-flash-lite"
+};
+
+app.get("/api/system/ai-config", authenticateToken as any, (req: any, res: any) => {
+  if (req.user?.role !== "admin") return res.status(403).json({ error: "Chỉ admin mới được xem cấu hình AI." });
+  res.json({
+    apiKey: customSystemAiConfig.apiKey || (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== "MY_GEMINI_API_KEY" ? "******** (Từ biến môi trường)" : ""),
+    model: customSystemAiConfig.model,
+    fallbackModel: customSystemAiConfig.fallbackModel,
+    isConfigured: !!customSystemAiConfig.apiKey || (!!process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== "MY_GEMINI_API_KEY")
+  });
+});
+
+app.post("/api/system/ai-config", authenticateToken as any, (req: any, res: any) => {
+  if (req.user?.role !== "admin") return res.status(403).json({ error: "Chỉ admin mới được lưu cấu hình AI." });
+  const { apiKey, model, fallbackModel } = req.body;
+  
+  if (apiKey !== undefined && !apiKey.includes("********")) {
+    customSystemAiConfig.apiKey = apiKey;
+  }
+  if (model) customSystemAiConfig.model = model;
+  if (fallbackModel) customSystemAiConfig.fallbackModel = fallbackModel;
+  
+  res.json({ message: "Cập nhật cấu hình AI thành công." });
+});
+// -----------------------------
+
 app.get(["/api/backend", "/backend"], (_req, res) => {
   const students = Database.getStudents();
   const users = Database.getUsers();
@@ -604,7 +635,7 @@ if (apiKey && apiKey !== "MY_GEMINI_API_KEY") {
 }
 
 function getAiClient(req: any): GoogleGenAI | null {
-  const customKey = req.headers["x-gemini-api-key"] || req.headers["X-Gemini-Api-Key"];
+  const customKey = req.headers["x-gemini-api-key"] || req.headers["X-Gemini-Api-Key"] || customSystemAiConfig.apiKey;
   if (customKey && typeof customKey === "string" && customKey.trim()) {
     try {
       return new GoogleGenAI({

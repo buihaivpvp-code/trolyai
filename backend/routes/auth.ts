@@ -132,7 +132,11 @@ router.post("/register", async (req, res, next) => {
 
     if (error) {
       Logger.error(`Supabase register failed for ${cleanEmail}: ${error.message}`);
-      return res.status(400).json({ error: error.message || "Không thể đăng ký tài khoản." });
+      let errorMessage = error.message;
+      if (errorMessage === "User already registered") {
+        errorMessage = "Email này đã được đăng ký trên hệ thống. Vui lòng trở lại màn hình Đăng Nhập.";
+      }
+      return res.status(400).json({ error: errorMessage || "Không thể đăng ký tài khoản." });
     }
 
     const authUserId = data.user?.id;
@@ -381,6 +385,91 @@ router.put("/profile", authenticateToken as any, async (req: AuthenticatedReques
       user: userWithoutPassword,
       token: token
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * @route GET /api/auth/users
+ * @desc Get all users (Admin only)
+ * @access Private/Admin
+ */
+router.get("/users", authenticateToken as any, (req: AuthenticatedRequest, res: Response) => {
+  if (req.user?.role !== "admin") {
+    return res.status(403).json({ error: "Chỉ quản trị viên mới có quyền xem danh sách người dùng." });
+  }
+  const users = Database.getUsers().map(u => {
+    const { passwordHash, ...userWithoutPassword } = u;
+    return userWithoutPassword;
+  });
+  res.json(users);
+});
+
+/**
+ * @route PUT /api/auth/users/:id
+ * @desc Update a user (Admin only)
+ * @access Private/Admin
+ */
+router.put("/users/:id", authenticateToken as any, async (req: AuthenticatedRequest, res: Response, next) => {
+  if (req.user?.role !== "admin") {
+    return res.status(403).json({ error: "Chỉ quản trị viên mới có quyền cập nhật người dùng." });
+  }
+  try {
+    const { id } = req.params;
+    const { role, classCode, workplace } = req.body;
+    
+    const users = Database.getUsers();
+    const userIndex = users.findIndex(u => u.id === id);
+    
+    if (userIndex === -1) {
+      return res.status(404).json({ error: "Người dùng không tồn tại." });
+    }
+    
+    const updatedUser = {
+      ...users[userIndex],
+      role: role || users[userIndex].role,
+      classCode: classCode || users[userIndex].classCode,
+      workplace: workplace !== undefined ? workplace : users[userIndex].workplace,
+    };
+    
+    users[userIndex] = updatedUser;
+    await Database.saveUsers(users);
+    
+    const { passwordHash, ...userWithoutPassword } = updatedUser;
+    res.json({ message: "Cập nhật người dùng thành công", user: userWithoutPassword });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * @route DELETE /api/auth/users/:id
+ * @desc Delete a user (Admin only)
+ * @access Private/Admin
+ */
+router.delete("/users/:id", authenticateToken as any, async (req: AuthenticatedRequest, res: Response, next) => {
+  if (req.user?.role !== "admin") {
+    return res.status(403).json({ error: "Chỉ quản trị viên mới có quyền xóa người dùng." });
+  }
+  try {
+    const { id } = req.params;
+    
+    // Prevent admin from deleting themselves
+    if (id === req.user.id) {
+      return res.status(400).json({ error: "Không thể tự xóa tài khoản của chính mình." });
+    }
+    
+    let users = Database.getUsers();
+    const initialCount = users.length;
+    users = users.filter(u => u.id !== id);
+    
+    if (users.length === initialCount) {
+      return res.status(404).json({ error: "Người dùng không tồn tại." });
+    }
+    
+    await Database.saveUsers(users);
+    res.json({ message: "Xóa người dùng thành công" });
   } catch (err) {
     next(err);
   }

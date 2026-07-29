@@ -10,10 +10,14 @@ import {
   Layers3,
   Network,
   ShieldCheck,
+  ShieldCheck,
   Sparkles,
   Users2,
   Wrench
 } from "lucide-react";
+import AdminAccountPanel from "./AdminAccountPanel";
+import AdminDocumentPanel from "./AdminDocumentPanel";
+import AdminAiConfigPanel from "./AdminAiConfigPanel";
 
 type BackendFeatureId =
   | "auth"
@@ -382,103 +386,113 @@ export default function BackendDashboard() {
           </aside>
 
           <section className="p-5 sm:p-6">
-            <div className="flex flex-col gap-5 border-b border-white/10 pb-5 lg:flex-row lg:items-start lg:justify-between">
-              <div className="flex items-start gap-4">
-                <div
-                  className={`flex h-14 w-14 shrink-0 items-center justify-center bg-gradient-to-br ${activeFeature.accentClass} text-white`}
-                >
-                  <ActiveIcon className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-cyan-200">{activeFeature.summary}</p>
-                  <h2 className="mt-1 text-balance text-2xl font-black tracking-[-0.03em] text-white sm:text-3xl">
-                    {activeFeature.details.heading}
-                  </h2>
-                  <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300 sm:text-[15px]">
-                    {activeFeature.details.description}
-                  </p>
-                </div>
-              </div>
-
-              <div className="px-4 py-3">
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  <Activity className="h-4 w-4 text-emerald-300" />
-                  Trạng thái chức năng
-                </div>
-                <p className="mt-2 text-lg font-bold text-white">{activeFeature.status}</p>
-              </div>
-            </div>
-
-            <div className="mt-5 grid gap-4 md:grid-cols-3">
-              {activeFeature.metrics.map((metric) => (
-                <div key={metric.label} className="p-4">
-                  <p className="text-xs text-slate-400">{metric.label}</p>
-                  <p className="mt-2 text-xl font-bold text-white">{metric.value}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_320px]">
-              <div className="space-y-4">
-                {activeFeature.details.sections.map((section) => (
-                  <article key={section.title} className="p-5">
-                    <h3 className="text-lg font-bold text-white">{section.title}</h3>
-                    <p className="mt-2 text-sm leading-7 text-slate-300">{section.body}</p>
-                  </article>
-                ))}
-              </div>
-
-              <aside className="space-y-4">
-                <div className="p-5">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                    <ShieldCheck className="h-4 w-4 text-cyan-300" />
-                    Điểm nhấn chức năng
+            {activeFeature.id === "auth" ? (
+              <AdminAccountPanel />
+            ) : activeFeature.id === "documents" ? (
+              <AdminDocumentPanel />
+            ) : activeFeature.id === "ai" ? (
+              <AdminAiConfigPanel />
+            ) : (
+              <>
+                <div className="flex flex-col gap-5 border-b border-white/10 pb-5 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="flex items-start gap-4">
+                    <div
+                      className={`flex h-14 w-14 shrink-0 items-center justify-center bg-gradient-to-br ${activeFeature.accentClass} text-white`}
+                    >
+                      <ActiveIcon className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-cyan-200">{activeFeature.summary}</p>
+                      <h2 className="mt-1 text-balance text-2xl font-black tracking-[-0.03em] text-white sm:text-3xl">
+                        {activeFeature.details.heading}
+                      </h2>
+                      <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300 sm:text-[15px]">
+                        {activeFeature.details.description}
+                      </p>
+                    </div>
                   </div>
-                  <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-300">
-                    {activeFeature.bullets.map((bullet) => (
-                      <li key={bullet} className="flex gap-3">
-                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-300" />
-                        <span>{bullet}</span>
-                      </li>
+
+                  <div className="px-4 py-3">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                      <Activity className="h-4 w-4 text-emerald-300" />
+                      Trạng thái chức năng
+                    </div>
+                    <p className="mt-2 text-lg font-bold text-white">{activeFeature.status}</p>
+                  </div>
+                </div>
+
+                <div className="mt-5 grid gap-4 md:grid-cols-3">
+                  {activeFeature.metrics.map((metric) => (
+                    <div key={metric.label} className="p-4">
+                      <p className="text-xs text-slate-400">{metric.label}</p>
+                      <p className="mt-2 text-xl font-bold text-white">{metric.value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_320px]">
+                  <div className="space-y-4">
+                    {activeFeature.details.sections.map((section) => (
+                      <article key={section.title} className="p-5">
+                        <h3 className="text-lg font-bold text-white">{section.title}</h3>
+                        <p className="mt-2 text-sm leading-7 text-slate-300">{section.body}</p>
+                      </article>
                     ))}
-                  </ul>
-                </div>
+                  </div>
 
-                <div className="p-5">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                    <FileStack className="h-4 w-4 text-amber-300" />
-                    Liên kết điều hướng
-                  </div>
-                  <div className="mt-4 space-y-3">
-                    <a
-                      href="/"
-                      className="flex items-center justify-between px-4 py-3 text-sm font-semibold text-slate-100 transition-colors hover:bg-white/8"
-                    >
-                      Sang frontend chính
-                      <Sparkles className="h-4 w-4 text-cyan-200" />
-                    </a>
-                    <a
-                      href="/backend"
-                      className="flex items-center justify-between bg-cyan-400/10 px-4 py-3 text-sm font-semibold text-cyan-100"
-                    >
-                      Đang ở backend
-                      <Database className="h-4 w-4 text-cyan-200" />
-                    </a>
-                  </div>
-                </div>
+                  <aside className="space-y-4">
+                    <div className="p-5">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                        <ShieldCheck className="h-4 w-4 text-cyan-300" />
+                        Điểm nhấn chức năng
+                      </div>
+                      <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-300">
+                        {activeFeature.bullets.map((bullet) => (
+                          <li key={bullet} className="flex gap-3">
+                            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-300" />
+                            <span>{bullet}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
 
-                <div className="p-5">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                    <Wrench className="h-4 w-4 text-indigo-300" />
-                    Ghi chú bố cục
-                  </div>
-                  <p className="mt-3 text-sm leading-7 text-slate-300">
-                    Bố cục mới chia rõ 2 vùng: cột trái để chọn nhóm chức năng, cột phải để đọc
-                    trạng thái, phạm vi và chi tiết vận hành của backend.
-                  </p>
+                    <div className="p-5">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                        <FileStack className="h-4 w-4 text-amber-300" />
+                        Liên kết điều hướng
+                      </div>
+                      <div className="mt-4 space-y-3">
+                        <a
+                          href="/"
+                          className="flex items-center justify-between px-4 py-3 text-sm font-semibold text-slate-100 transition-colors hover:bg-white/8"
+                        >
+                          Sang frontend chính
+                          <Sparkles className="h-4 w-4 text-cyan-200" />
+                        </a>
+                        <a
+                          href="/backend"
+                          className="flex items-center justify-between bg-cyan-400/10 px-4 py-3 text-sm font-semibold text-cyan-100"
+                        >
+                          Đang ở backend
+                          <Database className="h-4 w-4 text-cyan-200" />
+                        </a>
+                      </div>
+                    </div>
+
+                    <div className="p-5">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                        <Wrench className="h-4 w-4 text-indigo-300" />
+                        Ghi chú bố cục
+                      </div>
+                      <p className="mt-3 text-sm leading-7 text-slate-300">
+                        Bố cục mới chia rõ 2 vùng: cột trái để chọn nhóm chức năng, cột phải để đọc
+                        trạng thái, phạm vi và chi tiết vận hành của backend.
+                      </p>
+                    </div>
+                  </aside>
                 </div>
-              </aside>
-            </div>
+              </>
+            )}
           </section>
         </main>
       </div>
