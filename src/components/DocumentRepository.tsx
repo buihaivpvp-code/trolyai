@@ -785,7 +785,8 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
         });
 
         if (!uploadRes.ok) {
-          throw new Error("Lỗi tải lên máy chủ.");
+          const errData = await uploadRes.json().catch(() => ({}));
+          throw new Error(errData.error || "Lỗi tải lên máy chủ.");
         }
 
         // 2. Try text extraction & AI analysis
@@ -1014,7 +1015,8 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
         });
 
         if (!uploadRes.ok) {
-          throw new Error("Không thể lưu trữ tệp tin gốc lên máy chủ.");
+          const errData = await uploadRes.json().catch(() => ({}));
+          throw new Error(errData.error || "Không thể lưu trữ tệp tin gốc lên máy chủ.");
         }
         isUploaded = true;
       }
