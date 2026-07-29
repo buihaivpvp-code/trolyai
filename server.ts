@@ -8,7 +8,6 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { GoogleGenAI, Type } from "@google/genai";
-import { createServer as createViteServer } from "vite";
 import { AssessmentValue } from "./src/types";
 
 // Load environment variables
@@ -2685,6 +2684,7 @@ app.use(globalErrorHandler);
 
 async function setupFrontend() {
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: {
         middlewareMode: true,

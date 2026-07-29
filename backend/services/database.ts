@@ -13,8 +13,8 @@ import {
   ClassJournalPraiseSchema,
   ClassJournalInfractionSchema,
   AssessmentValue
-} from "../models/schema";
-import { getSupabaseClient, isSupabaseConfigured } from "./supabase";
+} from "../models/schema.js";
+import { getSupabaseClient, isSupabaseConfigured } from "./supabase.js";
 
 function hashPassword(password: string): string {
   return crypto.createHmac("sha256", "eduai_password_salt_2026").update(password).digest("hex");
