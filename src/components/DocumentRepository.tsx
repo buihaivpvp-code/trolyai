@@ -860,48 +860,7 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
           throw new Error(errData.error || "Lỗi tải lên máy chủ.");
         }
 
-        // 2. Try text extraction & AI analysis
-        setBulkStatuses(prev => ({ ...prev, [file.name]: "analyzing" }));
-        let rawText = "";
-        let analysisData: any = null;
 
-        if (fileExt === ".docx") {
-          try {
-            const arrayBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = (e) => {
-                if (e.target?.result instanceof ArrayBuffer) {
-                  resolve(e.target.result);
-                } else {
-                  reject(new Error("Lỗi định dạng Word."));
-                }
-              };
-              reader.onerror = () => reject(new Error("Lỗi đọc tệp tin."));
-              reader.readAsArrayBuffer(file);
-            });
-            const mammothResult = await mammoth.extractRawText({ arrayBuffer });
-            rawText = mammothResult.value;
-          } catch (err) {
-            console.warn(`Mammoth failed for ${file.name}:`, err);
-          }
-        } else if (fileExt === ".txt") {
-          try {
-            rawText = await new Promise<string>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = (e) => {
-                if (typeof e.target?.result === "string") {
-                  resolve(e.target.result);
-                } else {
-                  reject(new Error("Lỗi định dạng TXT."));
-                }
-              };
-              reader.onerror = () => reject(new Error("Lỗi đọc tệp tin."));
-              reader.readAsText(file);
-            });
-          } catch (err) {
-            console.warn(`Plain text reader failed for ${file.name}:`, err);
-          }
-        }
 
         // Fallback or run AI call
         if (!rawText || !rawText.trim()) {
