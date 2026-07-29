@@ -3342,7 +3342,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                               </div>
                             </div>
                           </div>
-                        ) : [".doc", ".docm", ".dot", ".dotx", ".dotm", ".rtf", ".xls", ".xlsx", ".xlsm", ".xlsb", ".xlt", ".xltx", ".xltm", ".ppt", ".pptx", ".pptm", ".pps", ".ppsx", ".ppsm", ".pot", ".potx", ".potm"].includes(previewDoc.fileExtension.toLowerCase()) ? (
+                        ) : [".docm", ".dot", ".dotx", ".dotm", ".rtf", ".xls", ".xlsx", ".xlsm", ".xlsb", ".xlt", ".xltx", ".xltm", ".ppt", ".pptx", ".pptm", ".pps", ".ppsx", ".ppsm", ".pot", ".potx", ".potm"].includes(previewDoc.fileExtension.toLowerCase()) ? (
                           /* 2. OFFICE FILE DIRECT PREVIEW AND DOWNLOAD */
                           <div className="flex flex-col items-center justify-center p-8 bg-white border border-slate-200 rounded-2xl text-center space-y-4 my-8 shadow-xs">
                             <div className="p-4 bg-indigo-50 rounded-full text-indigo-600">
@@ -3368,7 +3368,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                             {/* Toolbar Controls */}
                             <div className="bg-slate-900 text-white rounded-xl px-4 py-2 flex items-center justify-between text-xs border border-slate-800 shadow-md">
                               <div className="flex items-center gap-1 font-bold text-[10px] text-indigo-400 uppercase tracking-wider">
-                                {previewDoc.fileExtension === ".docx" ? (
+                                {previewDoc.fileExtension === ".docx" || previewDoc.fileExtension === ".doc" ? (
                                   <>
                                     <span className="bg-blue-600 text-white font-extrabold px-1 py-0.5 rounded mr-1">W</span>
                                     <span>Word Viewer Mode</span>

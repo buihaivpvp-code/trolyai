@@ -96,10 +96,12 @@ export default function SlideGenerator({ user }: { user?: any } = {}) {
       try {
         const parsed: DocumentItem[] = JSON.parse(saved);
         
-        // Filter strictly: Only "Giáo án" or "Sách giáo khoa"
-        const filtered = parsed.filter(
-          (d) => d.category === "Giáo án" || d.category === "Sách giáo khoa"
-        );
+        // Filter strictly: Only "Giáo án" or "Sách giáo khoa" (case-insensitive)
+        const filtered = parsed.filter((d) => {
+          if (!d.category) return false;
+          const cat = d.category.trim().toLowerCase();
+          return cat === "giáo án" || cat === "sách giáo khoa";
+        });
 
         // Helper to extract week number from document name or filename
         const extractWeekNum = (nameStr: string): number => {
