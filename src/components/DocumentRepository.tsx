@@ -930,17 +930,22 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
         const now = new Date();
         const dateStr = `${now.getDate().toString().padStart(2, "0")}/${(now.getMonth() + 1).toString().padStart(2, "0")}/${now.getFullYear()} ${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
 
+        // Hướng tự động phân loại dựa trên nội dung tệp
+        const autoCategory = analysisData?.category || docCategory;
+        const autoGrade = analysisData?.grade || docGrade;
+        const autoSubject = analysisData?.subject || docSubject;
+
         // Combine Grade and File Name for display title
-        const combinedTitle = `${docGrade} - ${normalizedFileName}`;
+        const combinedTitle = `${autoGrade} - ${analysisData?.title || normalizedFileName}`;
 
         const newDoc: DocumentItem = {
           id: docId,
           name: combinedTitle,
-          category: docCategory,
-          grade: docCategory === "Tài liệu tham khảo" && docGrade === "Tất cả" ? "Tất cả" : docGrade,
-          subject: docCategory === "Tài liệu tham khảo" && docSubject === "Tất cả" ? "Tất cả" : docSubject,
-          bookSeries: docCategory === "Sách giáo khoa" ? docBookSeries : undefined,
-          refGroup: docCategory === "Tài liệu tham khảo" ? docRefGroup : undefined,
+          category: autoCategory,
+          grade: autoCategory === "Tài liệu tham khảo" && autoGrade === "Tất cả" ? "Tất cả" : autoGrade,
+          subject: autoCategory === "Tài liệu tham khảo" && autoSubject === "Tất cả" ? "Tất cả" : autoSubject,
+          bookSeries: autoCategory === "Sách giáo khoa" ? docBookSeries : undefined,
+          refGroup: autoCategory === "Tài liệu tham khảo" ? docRefGroup : undefined,
           fileName: fileToUpload.name,
           fileSize: finalFileSizeStr,
           fileExtension: finalFileExt,
@@ -1106,14 +1111,19 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
       const now = new Date();
       const dateStr = `${now.getDate().toString().padStart(2, "0")}/${(now.getMonth() + 1).toString().padStart(2, "0")}/${now.getFullYear()} ${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
 
+      // Hướng tự động phân loại dựa trên nội dung tệp
+      const autoCategory = analysisResult?.category || docCategory;
+      const autoGrade = analysisResult?.grade || docGrade;
+      const autoSubject = analysisResult?.subject || docSubject;
+
       const newDoc: DocumentItem = {
         id: docId,
         name: normalizeTuanWord(docName.trim()),
-        category: docCategory,
-        grade: docCategory === "Tài liệu tham khảo" && docGrade === "Tất cả" ? "Tất cả" : docGrade,
-        subject: docCategory === "Tài liệu tham khảo" && docSubject === "Tất cả" ? "Tất cả" : docSubject,
-        bookSeries: docCategory === "Sách giáo khoa" ? docBookSeries : undefined,
-        refGroup: docCategory === "Tài liệu tham khảo" ? docRefGroup : undefined,
+        category: autoCategory,
+        grade: autoCategory === "Tài liệu tham khảo" && autoGrade === "Tất cả" ? "Tất cả" : autoGrade,
+        subject: autoCategory === "Tài liệu tham khảo" && autoSubject === "Tất cả" ? "Tất cả" : autoSubject,
+        bookSeries: autoCategory === "Sách giáo khoa" ? docBookSeries : undefined,
+        refGroup: autoCategory === "Tài liệu tham khảo" ? docRefGroup : undefined,
         fileName: fileToUpload ? normalizeTuanWord(fileToUpload.name) : normalizeTuanWord(docName) + fileExt,
         fileSize: fileSizeStr,
         fileExtension: fileExt,
