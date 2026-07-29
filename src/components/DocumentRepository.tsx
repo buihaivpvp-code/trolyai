@@ -708,8 +708,12 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
   };
 
   const handleFileSelected = (file: File) => {
-    if (file.size > 3 * 1024 * 1024) {
-      setUploadError(`Tệp tin "${file.name}" vượt quá 3MB. Vui lòng tải tệp dưới 3MB.`);
+    if (file.name.startsWith("~$")) {
+      setUploadError(`Tệp tin "${file.name}" là tệp tạm thời của hệ thống. Vui lòng chọn tệp gốc.`);
+      return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      setUploadError(`Tệp tin "${file.name}" vượt quá 50MB. Vui lòng tải tệp dưới 50MB.`);
       return;
     }
     setSelectedFile(file);
@@ -721,12 +725,17 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
   };
 
   const handleBulkFilesSelected = (files: File[]) => {
-    const tooLargeFiles = files.filter(f => f.size > 3 * 1024 * 1024);
-    const validFiles = files.filter(f => f.size <= 3 * 1024 * 1024);
+    const validNames = files.filter(f => !f.name.startsWith("~$"));
+    if (validNames.length < files.length) {
+      alert(`Đã bỏ qua ${files.length - validNames.length} tệp tạm thời (bắt đầu bằng ~$).`);
+    }
+
+    const tooLargeFiles = validNames.filter(f => f.size > 50 * 1024 * 1024);
+    const validFiles = validNames.filter(f => f.size <= 50 * 1024 * 1024);
 
     if (tooLargeFiles.length > 0) {
       setUploadError(
-        `Bỏ qua ${tooLargeFiles.length} tệp vượt quá 3MB: ${tooLargeFiles.map(f => f.name).join(", ")}. Vui lòng chỉ tải các tệp dưới 3MB.`
+        `Bỏ qua ${tooLargeFiles.length} tệp vượt quá 50MB. Vui lòng chỉ tải các tệp dưới 50MB.`
       );
     } else {
       setUploadError(null);

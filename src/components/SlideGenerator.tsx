@@ -84,24 +84,24 @@ export default function SlideGenerator({ user }: { user?: any } = {}) {
   };
 
   // Synchronize document repository
-  const loadDocuments = (isFirstMount = false) => {
-    const key = getStorageKey();
-    const saved = localStorage.getItem(key);
-    if (saved === lastLoadedRepoRef.current && !isFirstMount) {
-      return; // Skip update if raw content remains identical
-    }
-    lastLoadedRepoRef.current = saved;
+  const loadDocuments = async (isFirstMount = false) => {
+    try {
+      const res = await apiFetch("/api/documents");
+      if (!res.ok) return;
+      const parsed: DocumentItem[] = await res.json();
+      
+      const savedStr = JSON.stringify(parsed);
+      if (savedStr === lastLoadedRepoRef.current && !isFirstMount) {
+        return; // Skip update if raw content remains identical
+      }
+      lastLoadedRepoRef.current = savedStr;
 
-    if (saved) {
-      try {
-        const parsed: DocumentItem[] = JSON.parse(saved);
-        
-        // Filter strictly: Only "Giáo án" or "Sách giáo khoa" (case-insensitive)
-        const filtered = parsed.filter((d) => {
-          if (!d.category) return false;
-          const cat = d.category.trim().toLowerCase();
-          return cat === "giáo án" || cat === "sách giáo khoa";
-        });
+      // Filter strictly: Only "Giáo án" or "Sách giáo khoa" (case-insensitive)
+      const filtered = parsed.filter((d) => {
+        if (!d.category) return false;
+        const cat = d.category.trim().toLowerCase();
+        return cat === "giáo án" || cat === "sách giáo khoa";
+      });
 
         // Helper to extract week number from document name or filename
         const extractWeekNum = (nameStr: string): number => {
@@ -160,11 +160,7 @@ export default function SlideGenerator({ user }: { user?: any } = {}) {
       } catch (e) {
         console.error("Error reading repository for slides:", e);
       }
-    } else {
-      setSourceDocs([]);
-      setUnlockedGrades([]);
-    }
-  };
+    };
 
   // On mount and periodic verification
   useEffect(() => {
@@ -345,18 +341,6 @@ export default function SlideGenerator({ user }: { user?: any } = {}) {
     setSlides([]);
     setImagePrompt("");
 
-    // Read saved documents from repository
-    const key = getStorageKey();
-    const savedDocs = localStorage.getItem(key);
-    let parsedDocs = [];
-    if (savedDocs) {
-      try {
-        parsedDocs = JSON.parse(savedDocs);
-      } catch (e) {
-        console.error("Error reading saved documents for slide generation:", e);
-      }
-    }
-
     const commandToUse = overrideCommand || aiCommand;
 
     // Invoke Gemini server-side AI Slide creator grounded on documents
@@ -369,7 +353,7 @@ export default function SlideGenerator({ user }: { user?: any } = {}) {
           subject, 
           topic, 
           command: commandToUse,
-          documents: parsedDocs,
+          documents: sourceDocs,
           selectedDocId: selectedDocId || undefined
         })
       });
