@@ -3328,8 +3328,28 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                               </div>
                             </div>
                           </div>
+                        ) : [".doc", ".xls", ".xlsx", ".ppt", ".pptx"].includes(previewDoc.fileExtension.toLowerCase()) ? (
+                          /* 2. OFFICE FILE DIRECT PREVIEW AND DOWNLOAD */
+                          <div className="flex flex-col items-center justify-center p-8 bg-white border border-slate-200 rounded-2xl text-center space-y-4 my-8 shadow-xs">
+                            <div className="p-4 bg-indigo-50 rounded-full text-indigo-600">
+                              <FileText className="w-10 h-10" />
+                            </div>
+                            <div className="space-y-1">
+                              <h4 className="text-sm font-black text-slate-800">Tài liệu Office ({previewDoc.fileExtension.substring(1).toUpperCase()})</h4>
+                              <p className="text-xs text-slate-500 max-w-sm leading-normal">
+                                Định dạng {previewDoc.fileExtension.toUpperCase()} cần được mở bằng Microsoft Office hoặc ứng dụng chuyên dụng. Vui lòng bấm nút dưới đây để tải về tệp tin gốc.
+                              </p>
+                            </div>
+                            <button
+                              onClick={(e) => handleDownload(previewDoc, e)}
+                              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs flex items-center gap-2 cursor-pointer border-none shadow-sm transition-all"
+                            >
+                              <Download className="w-4 h-4" />
+                              Tải Về & Mở Tệp Tin Gốc
+                            </button>
+                          </div>
                         ) : (
-                          /* 2. TEXT AND DOCUMENT READER PREVIEW (PDF, DOCX) */
+                          /* 3. TEXT AND DOCUMENT READER PREVIEW (PDF, DOCX) */
                           <div className="space-y-3">
                             {/* Toolbar Controls */}
                             <div className="bg-slate-900 text-white rounded-xl px-4 py-2 flex items-center justify-between text-xs border border-slate-800 shadow-md">
