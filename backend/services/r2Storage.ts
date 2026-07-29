@@ -218,6 +218,32 @@ class R2StorageService {
     }
   }
 
+  async listObjects(prefix: string): Promise<Array<{ key: string; size: number; lastModified?: Date }>> {
+    if (!this.client || !this.bucketName) {
+      return [];
+    }
+
+    try {
+      const response = await this.client.send(
+        new ListObjectsV2Command({
+          Bucket: this.bucketName,
+          Prefix: prefix,
+        })
+      );
+
+      return (response.Contents || [])
+        .map(item => ({
+          key: item.Key || "",
+          size: item.Size || 0,
+          lastModified: item.LastModified,
+        }))
+        .filter(item => item.key && !item.key.endsWith(".created"));
+    } catch (err) {
+      console.error("[R2Storage] Failed to list objects:", err);
+      return [];
+    }
+  }
+
   async downloadDocument(key: string): Promise<DownloadDocumentResult | null> {
     if (!this.client || !this.bucketName) {
       return null;

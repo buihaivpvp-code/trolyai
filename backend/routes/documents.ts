@@ -409,10 +409,96 @@ router.get("/download/:id", authenticateToken as any, async (req: AuthenticatedR
  * @desc Fetch all documents for the authenticated teacher
  * @access Private
  */
-router.get("/", authenticateToken as any, (req: AuthenticatedRequest, res: Response, next) => {
+router.get("/", authenticateToken as any, async (req: AuthenticatedRequest, res: Response, next) => {
   try {
     const ownerId = req.user?.role === "admin" ? undefined : req.user?.id;
     const documents = Database.getDocuments(ownerId);
+
+    // If R2 storage is enabled, auto-sync and recover any orphaned files from R2 storage
+    if (R2Storage.isEnabled() && req.user) {
+      const folderName = `${sanitizeFolderName(req.user.name || "giaovien")}_${req.user.id || "public"}`;
+      const r2Files = await R2Storage.listObjects(`${folderName}/`);
+      
+      const recoveredDocs: any[] = [];
+      const currentDocIds = new Set(documents.map(d => d.id));
+
+      for (const file of r2Files) {
+        const key = file.key;
+        const relativeKey = key.slice(folderName.length + 1); // e.g. "id_filename.docx"
+        const underscoreIndex = relativeKey.indexOf("_");
+        
+        if (underscoreIndex !== -1) {
+          const docId = relativeKey.substring(0, underscoreIndex);
+          const fileName = relativeKey.substring(underscoreIndex + 1);
+
+          if (!currentDocIds.has(docId)) {
+            // Reconstruct document metadata
+            const fileExt = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
+            const fileSizeStr = (file.size / (1024 * 1024)).toFixed(1) + " MB";
+            const parsedName = fileName.replace(/_/g, " ");
+
+            // Infer category
+            let category: "Giáo án" | "Sách giáo khoa" | "Tài liệu tham khảo" = "Giáo án";
+            if (parsedName.toLowerCase().includes("sgk") || parsedName.toLowerCase().includes("sách giáo khoa")) {
+              category = "Sách giáo khoa";
+            } else if (
+              parsedName.toLowerCase().includes("tham khảo") || 
+              parsedName.toLowerCase().includes("đề thi") || 
+              parsedName.toLowerCase().includes("phiếu") || 
+              parsedName.toLowerCase().includes("kiem tra")
+            ) {
+              category = "Tài liệu tham khảo";
+            }
+
+            // Infer grade
+            let grade = "Khối 4"; // default
+            const gradeMatch = parsedName.match(/(?:khối|khoi|lớp|lop)\s*(\d)/i);
+            if (gradeMatch) {
+              grade = `Khối ${gradeMatch[1]}`;
+            }
+
+            // Infer subject
+            let subject = "Toán"; // default
+            const subjectsList = [
+              "Toán", "Tiếng Việt", "Tiếng Anh", "Tự nhiên & Xã hội", "Khoa học", 
+              "Lịch sử & Địa lý", "Tin học & Công nghệ", "Đạo đức", "Mỹ thuật", 
+              "Âm nhạc", "Hoạt động trải nghiệm"
+            ];
+            for (const sub of subjectsList) {
+              if (parsedName.toLowerCase().includes(sub.toLowerCase())) {
+                subject = sub;
+                break;
+              }
+            }
+
+            const dateObj = file.lastModified || new Date();
+            const dateStr = `${dateObj.getDate().toString().padStart(2, "0")}/${(dateObj.getMonth() + 1).toString().padStart(2, "0")}/${dateObj.getFullYear()} ${dateObj.getHours().toString().padStart(2, "0")}:${dateObj.getMinutes().toString().padStart(2, "0")}`;
+
+            recoveredDocs.push({
+              id: docId,
+              ownerId: req.user.id,
+              name: parsedName.substring(0, parsedName.lastIndexOf(".")) || parsedName,
+              category,
+              grade,
+              subject,
+              fileName,
+              fileSize: fileSizeStr,
+              fileExtension: fileExt,
+              uploadDate: dateStr,
+              notes: "Tự động đồng bộ và khôi phục từ Cloudflare R2.",
+              isUploaded: true
+            });
+          }
+        }
+      }
+
+      if (recoveredDocs.length > 0) {
+        const mergedList = [...recoveredDocs, ...documents];
+        await Database.saveDocuments(mergedList, ownerId);
+        return res.json(mergedList);
+      }
+    }
+
     res.json(documents);
   } catch (err) {
     next(err);
