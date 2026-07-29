@@ -297,7 +297,7 @@ router.post("/upload", authenticateToken as any, async (req: AuthenticatedReques
 
     // Save file inside a virtual folder based on teacher's name and ID
     const sanitizedName = fileName.replace(/[^a-zA-Z0-9.\-_]/g, "_");
-    const folderName = `${sanitizeFolderName(req.user?.name || "giaovien")}_${req.user?.id || "public"}`;
+    const folderName = req.user?.teacherCode || `${sanitizeFolderName(req.user?.name || "giaovien")}_${req.user?.id || "public"}`;
     const safeFileName = `${folderName}/${id}_${sanitizedName}`;
     const contentType = inferContentType(sanitizedName);
 
@@ -382,7 +382,7 @@ router.get("/download/:id", authenticateToken as any, async (req: AuthenticatedR
       return res.status(503).send("S3/R2 object storage is not configured");
     }
 
-    const folderName = `${sanitizeFolderName(req.user?.name || "giaovien")}_${req.user?.id || "public"}`;
+    const folderName = req.user?.teacherCode || `${sanitizeFolderName(req.user?.name || "giaovien")}_${req.user?.id || "public"}`;
     const objectKey = await R2Storage.findDocumentKey(`${folderName}/${id}_`);
     if (!objectKey) {
       return res.status(404).send("File not found");
@@ -416,7 +416,7 @@ router.get("/", authenticateToken as any, async (req: AuthenticatedRequest, res:
 
     // If R2 storage is enabled, auto-sync and recover any orphaned files from R2 storage
     if (R2Storage.isEnabled() && req.user) {
-      const folderName = `${sanitizeFolderName(req.user.name || "giaovien")}_${req.user.id || "public"}`;
+      const folderName = req.user.teacherCode || `${sanitizeFolderName(req.user.name || "giaovien")}_${req.user.id || "public"}`;
       const r2Files = await R2Storage.listObjects(`${folderName}/`);
       
       const recoveredDocs: any[] = [];
@@ -552,7 +552,7 @@ router.delete("/:id", authenticateToken as any, async (req: AuthenticatedRequest
 
     // 1. Delete from R2 object storage if it's uploaded
     if (R2Storage.isEnabled()) {
-      const folderName = `${sanitizeFolderName(req.user?.name || "giaovien")}_${req.user?.id || "public"}`;
+      const folderName = req.user?.teacherCode || `${sanitizeFolderName(req.user?.name || "giaovien")}_${req.user?.id || "public"}`;
       const objectKey = await R2Storage.findDocumentKey(`${folderName}/${id}_`);
       if (objectKey) {
         await R2Storage.deleteDocument(objectKey);

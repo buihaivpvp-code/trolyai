@@ -30,6 +30,7 @@ export interface UserSchema {
   achievements?: string; // VARCHAR
   bio?: string;        // VARCHAR
   hasCompletedOnboarding?: boolean; // BOOLEAN
+  teacherCode?: string;             // VARCHAR (3-6 numbers)
 }
 
 /**

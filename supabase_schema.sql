@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS users (
   experience VARCHAR(255),
   achievements TEXT,
   bio TEXT,
-  "hasCompletedOnboarding" BOOLEAN DEFAULT FALSE
+  "hasCompletedOnboarding" BOOLEAN DEFAULT FALSE,
+  "teacherCode" VARCHAR(50)
 );
 
 -- 2. Students Base Table

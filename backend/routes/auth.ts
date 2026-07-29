@@ -29,8 +29,9 @@ function buildLocalUserFromAuth(params: {
   email: string;
   name?: string;
   classCode?: string;
+  teacherCode?: string;
 }) {
-  const { existingUser, authUserId, email, name, classCode } = params;
+  const { existingUser, authUserId, email, name, classCode, teacherCode } = params;
 
   return {
     id: existingUser?.id || authUserId,
@@ -46,7 +47,8 @@ function buildLocalUserFromAuth(params: {
     experience: existingUser?.experience,
     achievements: existingUser?.achievements,
     bio: existingUser?.bio,
-    hasCompletedOnboarding: existingUser?.hasCompletedOnboarding ?? false
+    hasCompletedOnboarding: existingUser?.hasCompletedOnboarding ?? false,
+    teacherCode: teacherCode || existingUser?.teacherCode || ""
   };
 }
 
@@ -56,7 +58,8 @@ function issueAppAuthResponse(user: any, rememberMe?: boolean) {
     email: user.email,
     name: user.name,
     role: user.role,
-    classCode: user.classCode
+    classCode: user.classCode,
+    teacherCode: user.teacherCode || ""
   };
 
   const expiryMs = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
@@ -76,14 +79,10 @@ function issueAppAuthResponse(user: any, rememberMe?: boolean) {
  */
 router.post("/register", async (req, res, next) => {
   try {
-    const { email, password, name, classCode = "4A", rememberMe } = req.body;
+    let { email, password, name, classCode = "4A", rememberMe } = req.body;
 
-    if (!email || !password || !name) {
-      return res.status(400).json({ error: "Vui lòng nhập đầy đủ email, mật khẩu và họ tên." });
-    }
-
-    if (password.length < 6) {
-      return res.status(400).json({ error: "Mật khẩu phải chứa ít nhất 6 ký tự." });
+    if (!name) {
+      return res.status(400).json({ error: "Vui lòng nhập họ tên giáo viên." });
     }
 
     if (!isSupabaseConfigured()) {
@@ -91,13 +90,29 @@ router.post("/register", async (req, res, next) => {
     }
 
     const supabase = getSupabaseClient();
+    
+    // Auto-generate teacherCode (random 3-6 digit code)
+    await Database.refreshCacheFromSupabase(true);
+    const users = Database.getUsers();
+    let teacherCode = "";
+    let isUnique = false;
+    while (!isUnique) {
+      teacherCode = String(Math.floor(100 + Math.random() * 999900));
+      isUnique = !users.some(u => u.teacherCode === teacherCode);
+    }
+
+    if (!email) {
+      email = `${teacherCode}@eduai.vn`;
+    }
+    if (!password) {
+      password = `eduai_pw_${teacherCode}`;
+    }
+
     const cleanEmail = email.toLowerCase().trim();
     const cleanName = name.trim();
     const cleanClassCode = classCode.toUpperCase().trim();
 
     // Prevent duplicate registrations by checking if email already exists in database
-    await Database.refreshCacheFromSupabase(true);
-    const users = Database.getUsers();
     const existing = users.find((u) => u.email.toLowerCase() === cleanEmail);
     if (existing) {
       return res.status(400).json({ error: "Email này đã được đăng ký trên hệ thống." });
@@ -109,7 +124,8 @@ router.post("/register", async (req, res, next) => {
       options: {
         data: {
           name: cleanName,
-          classCode: cleanClassCode
+          classCode: cleanClassCode,
+          teacherCode
         }
       }
     });
@@ -124,14 +140,13 @@ router.post("/register", async (req, res, next) => {
       return res.status(500).json({ error: "Đăng ký thành công nhưng không nhận được thông tin người dùng từ Supabase." });
     }
 
-
-
     const localUser = buildLocalUserFromAuth({
       existingUser: existing,
       authUserId,
       email: cleanEmail,
       name: cleanName,
-      classCode: cleanClassCode
+      classCode: cleanClassCode,
+      teacherCode
     });
 
     if (existing) {
@@ -142,26 +157,27 @@ router.post("/register", async (req, res, next) => {
     }
     await Database.saveUsers(users);
 
-    // Create R2 folder placeholder named after the teacher
+    // Create R2 folder placeholder named after the teacher's random code
     if (R2Storage.isEnabled()) {
-      const folderName = `${sanitizeFolderName(cleanName)}_${authUserId}`;
+      const folderName = teacherCode;
       try {
         await R2Storage.uploadDocument({
           key: `${folderName}/.created`,
           body: Buffer.from("created"),
           contentType: "text/plain"
         });
-        Logger.info(`Created R2 folder placeholder for teacher: ${folderName}`);
+        Logger.info(`Created R2 folder placeholder for teacher code: ${folderName}`);
       } catch (err) {
         Logger.warn(`Failed to create R2 folder placeholder for ${cleanEmail}:`, err);
       }
     }
 
     const authResponse = issueAppAuthResponse(localUser, rememberMe);
-    Logger.info(`Registered new Supabase-backed user account: ${localUser.email}`);
+    Logger.info(`Registered new Supabase-backed user account with code ${teacherCode}: ${localUser.email}`);
 
     res.status(201).json({
       message: "Đăng ký tài khoản thành công!",
+      teacherCode,
       ...authResponse
     });
   } catch (err) {
@@ -178,56 +194,67 @@ router.post("/login", async (req, res, next) => {
   try {
     const { email, password, rememberMe } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: "Vui lòng nhập email và mật khẩu." });
+    if (!email) {
+      return res.status(400).json({ error: "Vui lòng nhập Email hoặc Mã số truy cập." });
     }
 
-    if (!isSupabaseConfigured()) {
-      return res.status(500).json({ error: "Supabase chưa được cấu hình trên máy chủ." });
-    }
-
-    const supabase = getSupabaseClient();
-    const cleanEmail = email.toLowerCase().trim();
+    const inputClean = email.trim();
+    const isCode = /^\d{3,6}$/.test(inputClean);
 
     // Check if user exists in database first, if not, direct them to register
     await Database.refreshCacheFromSupabase(true);
     const users = Database.getUsers();
-    const existing = users.find((u) => u.email.toLowerCase() === cleanEmail);
+    
+    let existing = null;
+    if (isCode) {
+      existing = users.find((u) => u.teacherCode === inputClean);
+    } else {
+      existing = users.find((u) => u.email.toLowerCase() === inputClean.toLowerCase());
+    }
 
     if (!existing) {
       return res.status(404).json({
-        error: "Tài khoản này chưa tồn tại trên hệ thống. Vui lòng chuyển sang tab Đăng ký để tạo tài khoản mới."
+        error: isCode
+          ? "Mã số truy cập này không hợp lệ hoặc chưa được đăng ký."
+          : "Tài khoản này chưa tồn tại trên hệ thống. Vui lòng chuyển sang tab Đăng ký để tạo tài khoản mới."
       });
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: cleanEmail,
-      password
-    });
+    let authUserId = existing.id;
 
-    if (error || !data.user) {
-      Logger.error(`Supabase login failed for ${cleanEmail}: ${error?.message || "Unknown error"}`);
-      return res.status(401).json({ error: "Mật khẩu không chính xác. Vui lòng kiểm tra lại." });
+    if (!isCode) {
+      if (!password) {
+        return res.status(400).json({ error: "Vui lòng nhập mật khẩu." });
+      }
+
+      if (!isSupabaseConfigured()) {
+        return res.status(500).json({ error: "Supabase chưa được cấu hình trên máy chủ." });
+      }
+
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: existing.email,
+        password
+      });
+
+      if (error || !data.user) {
+        Logger.error(`Supabase login failed for ${existing.email}: ${error?.message || "Unknown error"}`);
+        return res.status(401).json({ error: "Mật khẩu không chính xác. Vui lòng kiểm tra lại." });
+      }
+      authUserId = data.user.id;
     }
-
-
 
     const localUser = buildLocalUserFromAuth({
       existingUser: existing,
-      authUserId: data.user.id,
-      email: cleanEmail,
-      name:
-        typeof data.user.user_metadata?.name === "string"
-          ? data.user.user_metadata.name
-          : existing?.name,
-      classCode:
-        typeof data.user.user_metadata?.classCode === "string"
-          ? data.user.user_metadata.classCode
-          : existing?.classCode
+      authUserId,
+      email: existing.email,
+      name: existing.name,
+      classCode: existing.classCode,
+      teacherCode: existing.teacherCode
     });
 
     if (existing) {
-      const userIndex = users.findIndex((u) => u.email.toLowerCase() === cleanEmail);
+      const userIndex = users.findIndex((u) => u.id === existing.id);
       users[userIndex] = localUser;
     } else {
       users.push(localUser);

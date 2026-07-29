@@ -11,6 +11,7 @@ export interface AuthenticatedRequest extends Request {
     name: string;
     role: string;
     classCode: string;
+    teacherCode?: string;
   };
 }
 
