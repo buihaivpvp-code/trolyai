@@ -642,16 +642,34 @@ export default function StudentManager({
         }
       }
 
-      const rawName = parts[0]?.trim();
+      // Automatically detect and shift out STT (sequential number) column
+      if (parts.length >= 2 && /^\d+$/.test(parts[0]?.trim() || "")) {
+        parts.shift();
+      }
+
+      const rawName = parts[0]?.trim() || "";
+      
+      // Skip header rows
+      const nameLower = rawName.toLowerCase();
+      if (
+        !rawName ||
+        nameLower === "stt" ||
+        nameLower === "số thứ tự" ||
+        nameLower === "so thu tu" ||
+        nameLower === "họ và tên" ||
+        nameLower === "họ tên" ||
+        nameLower === "ho va ten" ||
+        nameLower === "hoten" ||
+        nameLower === "tên học sinh" ||
+        nameLower === "ten hoc sinh" ||
+        nameLower === "tên" ||
+        nameLower === "ten"
+      ) {
+        continue;
+      }
       const rawGender = parts[1]?.trim() || "Nam";
       const rawDob = parts[2]?.trim() || "2016-01-01";
       const rawPhone = parts[3]?.trim() || "0900000000";
-
-      if (!rawName) {
-        errors.push(`Dòng ${i+1}: Thiếu họ tên.`);
-        continue;
-      }
-
       const genderClean: "Nam" | "Nữ" = (rawGender.toLowerCase() === "nữ" || rawGender.toLowerCase() === "nu") ? "Nữ" : "Nam";
       let dobClean = rawDob;
       if (!/^\d{4}-\d{2}-\d{2}$/.test(rawDob)) {
