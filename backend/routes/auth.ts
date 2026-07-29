@@ -101,11 +101,11 @@ router.post("/register", async (req, res, next) => {
       isUnique = !users.some(u => u.teacherCode === teacherCode);
     }
 
-    if (!email) {
-      email = `${teacherCode}@eduai.vn`;
+    if (!email || !email.includes("@")) {
+      return res.status(400).json({ error: "Vui lòng nhập địa chỉ email hợp lệ." });
     }
-    if (!password) {
-      password = `eduai_pw_${teacherCode}`;
+    if (!password || password.length < 6) {
+      return res.status(400).json({ error: "Mật khẩu phải có ít nhất 6 ký tự." });
     }
 
     const cleanEmail = email.toLowerCase().trim();

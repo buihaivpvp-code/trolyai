@@ -109,8 +109,7 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
       }
 
       if (mode === "register") {
-        setSuccess(`Đăng ký thành công! Mã số truy cập của Thầy/Cô là: ${data.teacherCode}. Vui lòng sao chép và lưu lại mã số này để đăng nhập.`);
-        setEmail(data.teacherCode || "");
+        setSuccess(`Đăng ký thành công! Mã số truy cập của Thầy/Cô là: ${data.teacherCode}. Thầy/cô có thể đăng nhập bằng mã số này hoặc Email.`);
         setPassword("");
         setMode("login");
         setLoading(false);
@@ -122,9 +121,11 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
       // Save/remove saved credentials based on rememberMe option
       if (rememberMe) {
         localStorage.setItem("remember_email", email);
+        localStorage.setItem("remember_password", password);
         localStorage.setItem("remember_me", "true");
       } else {
         localStorage.removeItem("remember_email");
+        localStorage.removeItem("remember_password");
         localStorage.removeItem("remember_me");
       }
       
@@ -285,66 +286,86 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
 
             {/* FORM */}
             <form onSubmit={handleSubmit} className="space-y-4" id="auth-main-form">
-              {mode === "register" ? (
-                <>
-                  <div className="space-y-1.5">
-                    <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">Họ và Tên giáo viên:</label>
-                    <div className="relative">
-                      <User className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ví dụ: Nguyễn Thị Mai"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="w-full text-xs pl-10 pr-4 py-3 bg-slate-900 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-white placeholder-slate-500"
-                      />
-                    </div>
+              {mode === "register" && (
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">Họ và Tên giáo viên:</label>
+                  <div className="relative">
+                    <User className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ví dụ: Nguyễn Thị Mai"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full text-xs pl-10 pr-4 py-3 bg-slate-900 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-white placeholder-slate-500"
+                    />
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">Lớp học chủ nhiệm:</label>
-                    <div className="relative">
-                      <School className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ví dụ: 4A, 4B, 5C"
-                        value={classCode}
-                        onChange={(e) => setClassCode(e.target.value)}
-                        className="w-full text-xs pl-10 pr-4 py-3 bg-slate-900 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-white placeholder-slate-500 uppercase font-bold"
-                      />
-                    </div>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                  {mode === "register" ? "Địa chỉ Email:" : "Email hoặc Mã số truy cập:"}
+                </label>
+                <div className="relative">
+                  {mode === "register" ? (
+                    <Mail className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
+                  ) : (
+                    <User className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
+                  )}
+                  <input
+                    type="text"
+                    required
+                    placeholder={mode === "register" ? "giao-vien@ten-truong.edu.vn" : "Nhập Email hoặc Mã số (VD: 15982)"}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full text-xs pl-10 pr-4 py-3 bg-slate-900 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-white placeholder-slate-500"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">Mật khẩu bảo mật:</label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
+                  <input
+                    type="password"
+                    required
+                    placeholder="Tối thiểu 6 ký tự"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full text-xs pl-10 pr-4 py-3 bg-slate-900 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-white placeholder-slate-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-1 pb-1">
+                <label className="flex items-center gap-2.5 cursor-pointer select-none text-xs text-slate-300 hover:text-white transition-colors" id="auth-remember-me-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="rounded border-slate-800 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-950 w-4.5 h-4.5 cursor-pointer accent-indigo-600"
+                  />
+                  <span>Ghi nhớ đăng nhập</span>
+                </label>
+              </div>
+
+              {mode === "register" && (
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">Lớp học chủ nhiệm:</label>
+                  <div className="relative">
+                    <School className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ví dụ: 4A, 4B, 5C"
+                      value={classCode}
+                      onChange={(e) => setClassCode(e.target.value)}
+                      className="w-full text-xs pl-10 pr-4 py-3 bg-slate-900 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-white placeholder-slate-500 uppercase font-bold"
+                    />
                   </div>
-                </>
-              ) : (
-                <>
-                  <div className="space-y-1.5">
-                    <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">Mã số truy cập (3-6 chữ số):</label>
-                    <div className="relative">
-                      <Lock className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
-                      <input
-                        type="text"
-                        required
-                        placeholder="Nhập mã số giáo viên của bạn"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full text-xs pl-10 pr-4 py-3 bg-slate-900 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-white placeholder-slate-500 font-mono text-center tracking-widest text-lg"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between pt-1 pb-1">
-                    <label className="flex items-center gap-2.5 cursor-pointer select-none text-xs text-slate-300 hover:text-white transition-colors" id="auth-remember-me-checkbox">
-                      <input
-                        type="checkbox"
-                        checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
-                        className="rounded border-slate-800 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-950 w-4.5 h-4.5 cursor-pointer accent-indigo-600"
-                      />
-                      <span>Ghi nhớ đăng nhập</span>
-                    </label>
-                  </div>
-                </>
+                </div>
               )}
 
               <button
