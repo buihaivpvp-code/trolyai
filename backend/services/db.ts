@@ -350,13 +350,11 @@ export const Database = {
     return raw;
   },
 
-  saveUsers(users: UserSchema[]) {
-    if (!isSupabaseConfigured()) {
-      writeJsonAtomic(USERS_FILE, users);
-      return;
-    }
+  async saveUsers(users: UserSchema[]) {
     writeJsonAtomic(USERS_FILE, users);
-    void replaceTable("users", users);
+    if (isSupabaseConfigured()) {
+      await replaceTable("users", users);
+    }
   },
 
   getStudents(ownerId?: string): any[] {
@@ -403,21 +401,25 @@ export const Database = {
     });
   },
 
-  saveStudents(students: any[], ownerId?: string) {
+  async saveStudents(students: any[], ownerId?: string) {
     const scopedStudents = ownerId ? students.map((student) => withOwnerId(student, ownerId)) : students;
     const allStudents = this.getStudents();
     const preservedStudents = ownerId ? allStudents.filter((student) => student.ownerId !== ownerId) : [];
     const merged = [...preservedStudents, ...scopedStudents];
     saveStudentsRelational(merged, undefined);
-    if (isSupabaseConfigured()) void replaceTable("students_base", readJsonSafe<StudentSchema[]>(STUDENTS_BASE_FILE, []));
-    if (isSupabaseConfigured()) void replaceTable("grades", readJsonSafe<Circular27GradeSchema[]>(GRADES_FILE, []));
-    if (isSupabaseConfigured()) void replaceTable("psychological_profiles", readJsonSafe<PsychologicalProfileSchema[]>(PSYCHOLOGICAL_PROFILES_FILE, []));
-    if (isSupabaseConfigured()) void replaceTable("semi_boarding_profiles", readJsonSafe<SemiBoardingProfileSchema[]>(SEMI_BOARDING_PROFILES_FILE, []));
-    if (isSupabaseConfigured()) void replaceTable("talent_profiles", readJsonSafe<TalentProfileSchema[]>(TALENT_PROFILES_FILE, []));
-    if (isSupabaseConfigured()) void replaceTable("attendances", readJsonSafe<AttendanceSchema[]>(ATTENDANCES_FILE, []));
-    if (isSupabaseConfigured()) void replaceTable("behavior_counts", readJsonSafe<BehaviorCountSchema[]>(BEHAVIOR_COUNTS_FILE, []));
-    if (isSupabaseConfigured()) void replaceTable("diaries", readJsonSafe<StudentDiarySchema[]>(DIARIES_FILE, []));
-    if (isSupabaseConfigured()) void replaceTable("monthly_grades", readJsonSafe<any[]>(MONTHLY_GRADES_FILE, []));
+    if (isSupabaseConfigured()) {
+      await Promise.all([
+        replaceTable("students_base", readJsonSafe<StudentSchema[]>(STUDENTS_BASE_FILE, [])),
+        replaceTable("grades", readJsonSafe<Circular27GradeSchema[]>(GRADES_FILE, [])),
+        replaceTable("psychological_profiles", readJsonSafe<PsychologicalProfileSchema[]>(PSYCHOLOGICAL_PROFILES_FILE, [])),
+        replaceTable("semi_boarding_profiles", readJsonSafe<SemiBoardingProfileSchema[]>(SEMI_BOARDING_PROFILES_FILE, [])),
+        replaceTable("talent_profiles", readJsonSafe<TalentProfileSchema[]>(TALENT_PROFILES_FILE, [])),
+        replaceTable("attendances", readJsonSafe<AttendanceSchema[]>(ATTENDANCES_FILE, [])),
+        replaceTable("behavior_counts", readJsonSafe<BehaviorCountSchema[]>(BEHAVIOR_COUNTS_FILE, [])),
+        replaceTable("diaries", readJsonSafe<StudentDiarySchema[]>(DIARIES_FILE, [])),
+        replaceTable("monthly_grades", readJsonSafe<any[]>(MONTHLY_GRADES_FILE, []))
+      ]);
+    }
   },
 
   getJournals(ownerId?: string): any[] {
@@ -433,15 +435,19 @@ export const Database = {
     }));
   },
 
-  saveJournals(journals: any[], ownerId?: string) {
+  async saveJournals(journals: any[], ownerId?: string) {
     const scopedJournals = ownerId ? journals.map((journal) => withOwnerId(journal, ownerId)) : journals;
     const allJournals = this.getJournals();
     const preservedJournals = ownerId ? allJournals.filter((journal) => journal.ownerId !== ownerId) : [];
     const merged = [...preservedJournals, ...scopedJournals];
     saveJournalsRelational(merged, undefined);
-    if (isSupabaseConfigured()) void replaceTable("journals_base", readJsonSafe<ClassJournalSchema[]>(JOURNALS_BASE_FILE, []));
-    if (isSupabaseConfigured()) void replaceTable("journal_praises", readJsonSafe<ClassJournalPraiseSchema[]>(JOURNAL_PRAISES_FILE, []));
-    if (isSupabaseConfigured()) void replaceTable("journal_infractions", readJsonSafe<ClassJournalInfractionSchema[]>(JOURNAL_INFRACTIONS_FILE, []));
+    if (isSupabaseConfigured()) {
+      await Promise.all([
+        replaceTable("journals_base", readJsonSafe<ClassJournalSchema[]>(JOURNALS_BASE_FILE, [])),
+        replaceTable("journal_praises", readJsonSafe<ClassJournalPraiseSchema[]>(JOURNAL_PRAISES_FILE, [])),
+        replaceTable("journal_infractions", readJsonSafe<ClassJournalInfractionSchema[]>(JOURNAL_INFRACTIONS_FILE, []))
+      ]);
+    }
   },
 
   getDocuments(ownerId?: string): DocumentSchema[] {
@@ -449,14 +455,14 @@ export const Database = {
     return all.filter((doc) => matchesOwner(doc, ownerId));
   },
 
-  saveDocuments(documents: DocumentSchema[], ownerId?: string) {
+  async saveDocuments(documents: DocumentSchema[], ownerId?: string) {
     const scoped = ownerId ? documents.map((doc) => withOwnerId(doc, ownerId)) : documents;
     const all = readJsonSafe<DocumentSchema[]>(DOCUMENTS_FILE, []);
     const preserved = ownerId ? all.filter((doc) => doc.ownerId !== ownerId) : [];
     const merged = [...preserved, ...scoped];
     writeJsonAtomic(DOCUMENTS_FILE, merged);
     if (isSupabaseConfigured()) {
-      void replaceTable("documents", merged);
+      await replaceTable("documents", merged);
     }
   }
 };

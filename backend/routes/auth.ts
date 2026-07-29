@@ -140,7 +140,7 @@ router.post("/register", async (req, res, next) => {
     } else {
       users.push(localUser);
     }
-    Database.saveUsers(users);
+    await Database.saveUsers(users);
 
     // Create R2 folder placeholder named after the teacher
     if (R2Storage.isEnabled()) {
@@ -232,7 +232,7 @@ router.post("/login", async (req, res, next) => {
     } else {
       users.push(localUser);
     }
-    Database.saveUsers(users);
+    await Database.saveUsers(users);
 
     const authResponse = issueAppAuthResponse(localUser, rememberMe);
     Logger.info(`User logged in via Supabase: ${localUser.email} with role ${localUser.role}`);
@@ -269,7 +269,7 @@ router.get("/me", authenticateToken as any, (req: AuthenticatedRequest, res: Res
  * @desc Update teacher profile info (avatar, phone, dob, workplace, experience, achievements, bio, name, classCode)
  * @access Private
  */
-router.put("/profile", authenticateToken as any, (req: AuthenticatedRequest, res: Response, next) => {
+router.put("/profile", authenticateToken as any, async (req: AuthenticatedRequest, res: Response, next) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: "Chưa xác thực." });
@@ -317,7 +317,7 @@ router.put("/profile", authenticateToken as any, (req: AuthenticatedRequest, res
     };
 
     users[userIndex] = updatedUser;
-    Database.saveUsers(users);
+    await Database.saveUsers(users);
 
     const tokenPayload = {
       id: updatedUser.id,

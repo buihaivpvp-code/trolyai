@@ -102,7 +102,7 @@ router.get("/", authenticateToken as any, (req: AuthenticatedRequest, res: Respo
  * @desc Add a new student record
  * @access Private (Teacher or Admin)
  */
-router.post("/", authenticateToken as any, validateStudent, (req: AuthenticatedRequest, res: Response, next) => {
+router.post("/", authenticateToken as any, validateStudent, async (req: AuthenticatedRequest, res: Response, next) => {
   try {
     const { 
       name, gender, dob, phone, fatherName, fatherPhone, motherName, motherPhone, 
@@ -149,7 +149,7 @@ router.post("/", authenticateToken as any, validateStudent, (req: AuthenticatedR
       ...newStudent,
       ownerId
     });
-    Database.saveStudents(students, ownerId);
+    await Database.saveStudents(students, ownerId);
 
     Logger.info(`Student registered: ${newStudent.name} in class ${newStudent.schoolClass}`);
     res.status(201).json(newStudent);
@@ -163,7 +163,7 @@ router.post("/", authenticateToken as any, validateStudent, (req: AuthenticatedR
  * @desc Add multiple student records at once
  * @access Private (Teacher or Admin)
  */
-router.post("/bulk", authenticateToken as any, (req: AuthenticatedRequest, res: Response, next) => {
+router.post("/bulk", authenticateToken as any, async (req: AuthenticatedRequest, res: Response, next) => {
   try {
     const studentsArray = req.body;
     if (!Array.isArray(studentsArray)) {
@@ -219,7 +219,7 @@ router.post("/bulk", authenticateToken as any, (req: AuthenticatedRequest, res: 
       addedStudents.push(newStudent);
     }
 
-    Database.saveStudents(currentStudents, ownerId);
+    await Database.saveStudents(currentStudents, ownerId);
     Logger.info(`Bulk registered ${addedStudents.length} students`);
     res.status(201).json(addedStudents);
   } catch (err) {
@@ -232,7 +232,7 @@ router.post("/bulk", authenticateToken as any, (req: AuthenticatedRequest, res: 
  * @desc Update an existing student profile
  * @access Private (Teacher or Admin)
  */
-router.put("/:id", authenticateToken as any, validateStudent, (req: AuthenticatedRequest, res: Response, next) => {
+router.put("/:id", authenticateToken as any, validateStudent, async (req: AuthenticatedRequest, res: Response, next) => {
   try {
     const { id } = req.params;
     const ownerId = req.user?.role === "admin" ? undefined : req.user?.id;
@@ -270,7 +270,7 @@ router.put("/:id", authenticateToken as any, validateStudent, (req: Authenticate
       schoolClass: updatedClass,
     };
 
-    Database.saveStudents(students, ownerId);
+    await Database.saveStudents(students, ownerId);
     Logger.info(`Student updated: ${students[idx].name}`);
 
     res.json({
@@ -287,7 +287,7 @@ router.put("/:id", authenticateToken as any, validateStudent, (req: Authenticate
  * @desc Remove a student from class list
  * @access Private (Admin or Class Teacher)
  */
-router.delete("/:id", authenticateToken as any, (req: AuthenticatedRequest, res: Response, next) => {
+router.delete("/:id", authenticateToken as any, async (req: AuthenticatedRequest, res: Response, next) => {
   try {
     const { id } = req.params;
     const ownerId = req.user?.role === "admin" ? undefined : req.user?.id;
@@ -306,7 +306,7 @@ router.delete("/:id", authenticateToken as any, (req: AuthenticatedRequest, res:
     }
 
     const [deleted] = students.splice(idx, 1);
-    Database.saveStudents(students, ownerId);
+    await Database.saveStudents(students, ownerId);
 
     Logger.warn(`Student removed: ${deleted.name} from class ${deleted.schoolClass}`);
     res.json({ message: "Xóa học sinh thành công", student: deleted });

@@ -30,7 +30,7 @@ router.get("/", authenticateToken as any, (req: AuthenticatedRequest, res: Respo
  * @desc Save a new class journal log and sync student infractions
  * @access Private
  */
-router.post("/", authenticateToken as any, validateJournal, (req: AuthenticatedRequest, res: Response, next) => {
+router.post("/", authenticateToken as any, validateJournal, async (req: AuthenticatedRequest, res: Response, next) => {
   try {
     const { date, lessonNumber, subject, lessonTopic, teacherComment, evaluation, orderliness, studentPraise, studentInfractions } = req.body;
 
@@ -53,7 +53,7 @@ router.post("/", authenticateToken as any, validateJournal, (req: AuthenticatedR
       ...newJournalEntry,
       ownerId
     });
-    Database.saveJournals(journals, ownerId);
+    await Database.saveJournals(journals, ownerId);
 
     // Sync infractions to student behavior metrics
     if (Array.isArray(studentInfractions) && studentInfractions.length > 0) {
@@ -87,7 +87,7 @@ router.post("/", authenticateToken as any, validateJournal, (req: AuthenticatedR
         }
       });
       
-      Database.saveStudents(students, ownerId);
+      await Database.saveStudents(students, ownerId);
     }
 
     Logger.info(`Saved journal entry: ${newJournalEntry.subject} - ${newJournalEntry.lessonTopic}`);
@@ -102,7 +102,7 @@ router.post("/", authenticateToken as any, validateJournal, (req: AuthenticatedR
  * @desc Remove a class journal log
  * @access Private
  */
-router.delete("/:id", authenticateToken as any, (req: AuthenticatedRequest, res: Response, next) => {
+router.delete("/:id", authenticateToken as any, async (req: AuthenticatedRequest, res: Response, next) => {
   try {
     const { id } = req.params;
     const ownerId = req.user?.role === "admin" ? undefined : req.user?.id;
@@ -114,7 +114,7 @@ router.delete("/:id", authenticateToken as any, (req: AuthenticatedRequest, res:
     }
 
     const [deleted] = journals.splice(idx, 1);
-    Database.saveJournals(journals, ownerId);
+    await Database.saveJournals(journals, ownerId);
 
     // Sync / Revert infractions for the deleted journal entry
     const studentInfractions = deleted.studentInfractions;
@@ -149,7 +149,7 @@ router.delete("/:id", authenticateToken as any, (req: AuthenticatedRequest, res:
       });
 
       if (studentsChanged) {
-        Database.saveStudents(students, ownerId);
+        await Database.saveStudents(students, ownerId);
       }
     }
 
@@ -165,7 +165,7 @@ router.delete("/:id", authenticateToken as any, (req: AuthenticatedRequest, res:
  * @desc Update an existing class journal log and sync student infractions
  * @access Private
  */
-router.put("/:id", authenticateToken as any, validateJournal, (req: AuthenticatedRequest, res: Response, next) => {
+router.put("/:id", authenticateToken as any, validateJournal, async (req: AuthenticatedRequest, res: Response, next) => {
   try {
     const { id } = req.params;
     const { date, lessonNumber, subject, lessonTopic, teacherComment, evaluation, orderliness, studentPraise, studentInfractions } = req.body;
@@ -196,7 +196,7 @@ router.put("/:id", authenticateToken as any, validateJournal, (req: Authenticate
       ...updatedJournalEntry,
       ownerId
     };
-    Database.saveJournals(journals, ownerId);
+    await Database.saveJournals(journals, ownerId);
 
     // Sync student behavior metrics: Revert old infractions, then apply new infractions
     const students = Database.getStudents(ownerId);
@@ -264,7 +264,7 @@ router.put("/:id", authenticateToken as any, validateJournal, (req: Authenticate
     }
 
     if (studentsChanged) {
-      Database.saveStudents(students, ownerId);
+      await Database.saveStudents(students, ownerId);
     }
 
     Logger.info(`Updated journal entry: ${updatedJournalEntry.subject} - ${updatedJournalEntry.lessonTopic}`);

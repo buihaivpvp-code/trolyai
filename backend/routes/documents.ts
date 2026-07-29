@@ -424,7 +424,7 @@ router.get("/", authenticateToken as any, (req: AuthenticatedRequest, res: Respo
  * @desc Save new document metadata
  * @access Private
  */
-router.post("/", authenticateToken as any, (req: AuthenticatedRequest, res: Response, next) => {
+router.post("/", authenticateToken as any, async (req: AuthenticatedRequest, res: Response, next) => {
   try {
     const ownerId = req.user?.role === "admin" ? undefined : req.user?.id;
     const currentDocuments = Database.getDocuments(ownerId);
@@ -441,7 +441,7 @@ router.post("/", authenticateToken as any, (req: AuthenticatedRequest, res: Resp
     };
 
     currentDocuments.push(docWithOwner);
-    Database.saveDocuments(currentDocuments, ownerId);
+    await Database.saveDocuments(currentDocuments, ownerId);
     res.status(201).json(docWithOwner);
   } catch (err) {
     next(err);
@@ -475,7 +475,7 @@ router.delete("/:id", authenticateToken as any, async (req: AuthenticatedRequest
 
     // 2. Delete metadata from database
     const updatedDocs = currentDocuments.filter(d => d.id !== id);
-    Database.saveDocuments(updatedDocs, ownerId);
+    await Database.saveDocuments(updatedDocs, ownerId);
 
     Logger.info(`Deleted document ${id} for user ${req.user?.email}`);
     res.json({ success: true });
