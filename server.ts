@@ -191,6 +191,19 @@ function selectTestSamples(params: {
 // -------------------------------------------------------------
 // PRODUCTION-GRADE BACKEND ROUTERS
 // -------------------------------------------------------------
+// Middleware to ensure local JSON caches are synchronized with Supabase on serverless functions
+app.use(async (req, res, next) => {
+  if (req.path.startsWith("/api/")) {
+    const isWriteRequest = ["POST", "PUT", "DELETE", "PATCH"].includes(req.method);
+    try {
+      await Database.refreshCacheFromSupabase(isWriteRequest);
+    } catch (err) {
+      console.warn("[Middleware] Supabase cache refresh failed:", err);
+    }
+  }
+  next();
+});
+
 app.use("/api/auth", authRouter);
 app.use("/api/students", studentsRouter);
 app.use("/api/journal", journalRouter);

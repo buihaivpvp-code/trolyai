@@ -261,6 +261,37 @@ function saveJournalsRelational(richJournals: any[], ownerId?: string) {
   writeJsonAtomic(JOURNAL_INFRACTIONS_FILE, infractionsTable);
 }
 
+let lastRefreshed = 0;
+const CACHE_TTL = 15000; // 15 seconds
+
+export async function refreshCacheFromSupabase(force = false) {
+  if (!isSupabaseConfigured()) return;
+  const now = Date.now();
+  if (!force && now - lastRefreshed < CACHE_TTL) {
+    return;
+  }
+  try {
+    const [users, students, journals] = await Promise.all([
+      readTable<UserSchema[]>("users", []),
+      readTable<StudentSchema[]>("students_base", []),
+      readTable<ClassJournalSchema[]>("journals_base", [])
+    ]);
+    
+    if (users.length > 0) {
+      writeJsonAtomic(USERS_FILE, users);
+    }
+    if (students.length > 0) {
+      saveStudentsRelational(students, undefined);
+    }
+    if (journals.length > 0) {
+      saveJournalsRelational(journals, undefined);
+    }
+    lastRefreshed = now;
+  } catch (e) {
+    console.warn("[Database] Failed to refresh cache from Supabase:", e);
+  }
+}
+
 export async function runMigrationsAndSeeding() {
   console.log("[Database] Checking schema migrations & seeding status...");
 
@@ -273,13 +304,21 @@ export async function runMigrationsAndSeeding() {
 
   try {
     const users = await readTable<UserSchema[]>("users", []);
-    if (users.length === 0) await replaceTable("users", initialUsers);
+    if (users.length === 0) {
+      await replaceTable("users", initialUsers);
+    }
 
     const students = await readTable<StudentSchema[]>("students_base", []);
-    if (students.length === 0) saveStudentsRelational(seedStudents);
+    if (students.length === 0) {
+      saveStudentsRelational(seedStudents);
+    }
 
     const journals = await readTable<ClassJournalSchema[]>("journals_base", []);
-    if (journals.length === 0) saveJournalsRelational(seedJournals);
+    if (journals.length === 0) {
+      saveJournalsRelational(seedJournals);
+    }
+    
+    await refreshCacheFromSupabase(true);
   } catch (e) {
     console.warn("[Database] Supabase initialization failed, continuing with local fallback:", e);
   }
@@ -288,6 +327,10 @@ export async function runMigrationsAndSeeding() {
 runMigrationsAndSeeding();
 
 export const Database = {
+  async refreshCacheFromSupabase(force = false) {
+    await refreshCacheFromSupabase(force);
+  },
+
   getUsers(): UserSchema[] {
     if (!isSupabaseConfigured()) return readJsonSafe<UserSchema[]>(USERS_FILE, initialUsers);
     // Synchronous compatibility fallback; routes call this synchronously.
