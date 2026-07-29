@@ -707,6 +707,10 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
   };
 
   const handleFileSelected = (file: File) => {
+    if (file.size > 3 * 1024 * 1024) {
+      setUploadError(`Tệp tin "${file.name}" vượt quá 3MB. Vui lòng tải tệp dưới 3MB.`);
+      return;
+    }
     setSelectedFile(file);
     setUploadSuccess(false);
     setUploadError(null);
@@ -716,14 +720,24 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
   };
 
   const handleBulkFilesSelected = (files: File[]) => {
+    const tooLargeFiles = files.filter(f => f.size > 3 * 1024 * 1024);
+    const validFiles = files.filter(f => f.size <= 3 * 1024 * 1024);
+
+    if (tooLargeFiles.length > 0) {
+      setUploadError(
+        `Bỏ qua ${tooLargeFiles.length} tệp vượt quá 3MB: ${tooLargeFiles.map(f => f.name).join(", ")}. Vui lòng chỉ tải các tệp dưới 3MB.`
+      );
+    } else {
+      setUploadError(null);
+    }
+
     setSelectedBulkFiles(prev => {
       // Avoid duplicate file names in the list
       const existingNames = new Set(prev.map(f => `${f.name}_${f.size}`));
-      const newFiles = files.filter(f => !existingNames.has(`${f.name}_${f.size}`));
+      const newFiles = validFiles.filter(f => !existingNames.has(`${f.name}_${f.size}`));
       return [...prev, ...newFiles];
     });
     setUploadSuccess(false);
-    setUploadError(null);
     setBulkMessage(null);
   };
 
