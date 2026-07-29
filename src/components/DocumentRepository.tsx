@@ -864,7 +864,8 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
         if (rawText && [".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".rtf"].includes(fileExt)) {
            const txtBlob = new Blob([rawText], { type: "text/plain" });
            const newName = file.name.substring(0, file.name.lastIndexOf(".")) + ".txt";
-           fileToUpload = new File([txtBlob], newName, { type: "text/plain" });
+           (txtBlob as any).name = newName;
+           fileToUpload = txtBlob as File;
            finalFileExt = ".txt";
            finalFileSizeStr = (fileToUpload.size / (1024 * 1024)).toFixed(3) + " MB";
         }
@@ -1053,7 +1054,8 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
     if (fileToUpload && extractedText && ["doc", "docx", "ppt", "pptx", "xls", "xlsx", "rtf"].includes(fileExtLower)) {
        const txtBlob = new Blob([extractedText], { type: "text/plain" });
        const newName = fileToUpload.name.substring(0, fileToUpload.name.lastIndexOf(".")) + ".txt";
-       fileToUpload = new File([txtBlob], newName, { type: "text/plain" });
+       (txtBlob as any).name = newName;
+       fileToUpload = txtBlob as File;
     }
 
     const fileExt = fileToUpload ? "." + fileToUpload.name.split(".").pop() : ".pdf";
@@ -2287,7 +2289,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                   ref={fileInputRef}
                   onChange={handleFileChange}
                   className="hidden"
-                  accept=".pdf,.doc,.docx,.docm,.dot,.dotx,.dotm,.rtf,.ppt,.pptx,.pptm,.pps,.ppsx,.ppsm,.pot,.potx,.potm,.xls,.xlsx,.xlsm,.xlsb,.xlt,.xltx,.xltm,.csv,.png,.jpg,.jpeg,.mp4,.txt"
+                  accept="*"
                 />
 
                 {selectedFile ? (
@@ -2609,7 +2611,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                   ref={fileInputRef}
                   onChange={handleFileChange}
                   className="hidden"
-                  accept=".pdf,.doc,.docx,.docm,.dot,.dotx,.dotm,.rtf,.ppt,.pptx,.pptm,.pps,.ppsx,.ppsm,.pot,.potx,.potm,.xls,.xlsx,.xlsm,.xlsb,.xlt,.xltx,.xltm,.csv,.png,.jpg,.jpeg,.mp4,.txt"
+                  accept="*"
                   multiple
                 />
 
