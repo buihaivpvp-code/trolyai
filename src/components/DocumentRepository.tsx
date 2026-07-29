@@ -707,8 +707,8 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
   };
 
   const handleFileSelected = (file: File) => {
-    if (file.size > 3 * 1024 * 1024) {
-      setUploadError(`Tệp tin "${file.name}" vượt quá 3MB. Vui lòng tải tệp dưới 3MB.`);
+    if (file.size > 50 * 1024 * 1024) {
+      setUploadError(`Tệp tin "${file.name}" vượt quá 50MB. Vui lòng tải tệp dưới 50MB.`);
       return;
     }
     setSelectedFile(file);
@@ -720,12 +720,12 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
   };
 
   const handleBulkFilesSelected = (files: File[]) => {
-    const tooLargeFiles = files.filter(f => f.size > 3 * 1024 * 1024);
-    const validFiles = files.filter(f => f.size <= 3 * 1024 * 1024);
+    const tooLargeFiles = files.filter(f => f.size > 50 * 1024 * 1024);
+    const validFiles = files.filter(f => f.size <= 50 * 1024 * 1024);
 
     if (tooLargeFiles.length > 0) {
       setUploadError(
-        `Bỏ qua ${tooLargeFiles.length} tệp vượt quá 3MB: ${tooLargeFiles.map(f => f.name).join(", ")}. Vui lòng chỉ tải các tệp dưới 3MB.`
+        `Bỏ qua ${tooLargeFiles.length} tệp vượt quá 50MB: ${tooLargeFiles.map(f => f.name).join(", ")}. Vui lòng chỉ tải các tệp dưới 50MB.`
       );
     } else {
       setUploadError(null);
@@ -745,15 +745,55 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
     e.preventDefault();
     if (selectedBulkFiles.length === 0) return;
 
+    // --- Duplicate check logic ---
+    const duplicateFiles = selectedBulkFiles.filter(f => 
+      documents.some(d => d.fileName === f.name || d.name === f.name)
+    );
+
+    let finalBulkFiles = [...selectedBulkFiles];
+    let overwrite = false;
+
+    if (duplicateFiles.length > 0) {
+      const confirmOverwrite = window.confirm(`Phát hiện ${duplicateFiles.length} tệp đã tồn tại trong kho (trùng tên).\n\nBạn có muốn GHI ĐÈ lên các tệp cũ không?\n- Chọn OK để GHI ĐÈ (xóa tệp cũ).\n- Chọn Cancel để BỎ QUA (không tải các tệp trùng).`);
+      if (confirmOverwrite) {
+        overwrite = true;
+      } else {
+        const duplicateNames = new Set(duplicateFiles.map(f => f.name));
+        finalBulkFiles = finalBulkFiles.filter(f => !duplicateNames.has(f.name));
+        if (finalBulkFiles.length === 0) {
+          setBulkMessage("Đã bỏ qua tất cả các tệp trùng. Không có tệp mới nào được tải lên.");
+          return;
+        }
+      }
+    }
+
     setIsUploading(true);
     setUploadError(null);
     setBulkMessage(null);
     setUploadProgress(0);
 
-    const updatedDocumentsList = [...documents];
+    let updatedDocumentsList = [...documents];
     
+    if (overwrite) {
+      const duplicateNames = new Set(duplicateFiles.map(f => f.name));
+      const docsToDelete = updatedDocumentsList.filter(d => duplicateNames.has(d.fileName) || duplicateNames.has(d.name));
+      
+      for (const d of docsToDelete) {
+        try {
+          await apiFetch(`/api/documents/${d.id}`, { method: 'DELETE' });
+          rawFilesMap.delete(d.id);
+          await deleteFileFromIndexedDB(d.id);
+        } catch (err) {
+          console.error("Lỗi xóa tệp cũ khi ghi đè:", err);
+        }
+      }
+      
+      updatedDocumentsList = updatedDocumentsList.filter(d => !docsToDelete.some(td => td.id === d.id));
+      setDocuments(updatedDocumentsList);
+    }
+
     const initialStatuses: { [fileName: string]: "waiting" | "uploading" | "analyzing" | "success" | "error" } = {};
-    selectedBulkFiles.forEach(f => {
+    finalBulkFiles.forEach(f => {
       initialStatuses[f.name] = "waiting";
     });
     setBulkStatuses(initialStatuses);
@@ -763,8 +803,8 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
     let failCount = 0;
     const failedFiles: File[] = [];
 
-    for (let i = 0; i < selectedBulkFiles.length; i++) {
-      const file = selectedBulkFiles[i];
+    for (let i = 0; i < finalBulkFiles.length; i++) {
+      const file = finalBulkFiles[i];
       const normalizedFileName = normalizeTuanWord(file.name);
       setBulkStatuses(prev => ({ ...prev, [file.name]: "uploading" }));
 
