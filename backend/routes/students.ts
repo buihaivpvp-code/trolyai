@@ -159,6 +159,75 @@ router.post("/", authenticateToken as any, validateStudent, (req: AuthenticatedR
 });
 
 /**
+ * @route POST /api/students/bulk
+ * @desc Add multiple student records at once
+ * @access Private (Teacher or Admin)
+ */
+router.post("/bulk", authenticateToken as any, (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const studentsArray = req.body;
+    if (!Array.isArray(studentsArray)) {
+      return res.status(400).json({ error: "Dữ liệu gửi lên phải là một danh sách học sinh." });
+    }
+
+    const ownerId = req.user?.role === "admin" ? undefined : req.user?.id;
+    const currentStudents = Database.getStudents(ownerId);
+    const addedStudents = [];
+
+    for (const student of studentsArray) {
+      const { 
+        name, gender, dob, phone, fatherName, fatherPhone, motherName, motherPhone, 
+        schoolGrade, schoolClass, avatar, circular27Grades, psychologicalProfile, 
+        semiBoardingProfile, talentProfile, attendance, behaviorCount 
+      } = student;
+      
+      const finalPhone = phone || fatherPhone || motherPhone;
+      if (!name || !gender || !dob || !finalPhone) {
+        continue;
+      }
+
+      const defaultAvatar = gender === "Nam" 
+        ? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80"
+        : "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80";
+
+      const targetClass = (schoolClass || (req.user ? req.user.classCode : "4A")).toString().toUpperCase().trim();
+
+      const newStudent = {
+        id: "std-" + generateId(),
+        name: name.trim(),
+        gender,
+        dob,
+        phone: finalPhone.trim(),
+        fatherName: fatherName || "",
+        fatherPhone: fatherPhone || "",
+        motherName: motherName || "",
+        motherPhone: motherPhone || "",
+        schoolGrade: Number(schoolGrade) || 4,
+        schoolClass: targetClass,
+        avatar: avatar || defaultAvatar,
+        circular27Grades: circular27Grades || {},
+        psychologicalProfile: psychologicalProfile || { sociability: 0, shyness: 0, hyperactive: 0, focus: 0 },
+        semiBoardingProfile: semiBoardingProfile || { allergies: "", diet: "", healthNotes: "" },
+        talentProfile: talentProfile || { art: false, music: false, sports: false, stem: false, notes: "" },
+        attendance: attendance || { totalDays: 0, presentDays: 0, lateDays: 0, absentDays: 0 },
+        behaviorCount: behaviorCount || { forgetHomework: 0, lateToSchool: 0, distraction: 0 },
+        diary: student.diary || [],
+        ownerId
+      };
+
+      currentStudents.push(newStudent);
+      addedStudents.push(newStudent);
+    }
+
+    Database.saveStudents(currentStudents, ownerId);
+    Logger.info(`Bulk registered ${addedStudents.length} students`);
+    res.status(201).json(addedStudents);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * @route PUT /api/students/:id
  * @desc Update an existing student profile
  * @access Private (Teacher or Admin)

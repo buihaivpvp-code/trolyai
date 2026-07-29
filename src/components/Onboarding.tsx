@@ -488,18 +488,16 @@ export default function Onboarding({ user, onOnboardingComplete }: OnboardingPro
         localStorage.setItem("auth_token", newToken);
       }
 
-      // 2. Add students sequentially or in parallel
-      for (const student of studentsList) {
-        const studentResp = await apiFetch("/api/students", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(student)
-        });
+      // 2. Add students in bulk
+      const studentResp = await apiFetch("/api/students/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(studentsList)
+      });
 
-        if (!studentResp.ok) {
-          const errData = await studentResp.json();
-          console.error("Lỗi thêm học sinh:", errData.error);
-        }
+      if (!studentResp.ok) {
+        const errData = await studentResp.json();
+        throw new Error(errData.error || "Không thể khởi tạo danh sách học sinh.");
       }
 
       // 3. Complete onboarding
@@ -981,6 +979,13 @@ export default function Onboarding({ user, onOnboardingComplete }: OnboardingPro
                     </div>
                   )}
                 </div>
+
+                {errorMessage && (
+                  <div className="mt-4 bg-rose-50 border border-rose-100 text-rose-800 p-3 rounded-xl text-xs flex gap-2 items-center">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                    <span>{errorMessage}</span>
+                  </div>
+                )}
 
                 {/* Actions Bottom */}
                 <div className="flex justify-between items-center pt-4 border-t border-slate-100">
