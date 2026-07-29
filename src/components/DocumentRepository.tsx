@@ -773,7 +773,63 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
       const fileSizeStr = (file.size / (1024 * 1024)).toFixed(1) + " MB";
 
       try {
-        // 1. Read file as Base64 and upload to server
+        // 1. Try text extraction & AI analysis FIRST
+        setBulkStatuses(prev => ({ ...prev, [file.name]: "analyzing" }));
+        let rawText = "";
+        let analysisData: any = null;
+
+        if (fileExt === ".docx") {
+          try {
+            const arrayBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                if (e.target?.result instanceof ArrayBuffer) {
+                  resolve(e.target.result);
+                } else {
+                  reject(new Error("Lỗi định dạng Word."));
+                }
+              };
+              reader.onerror = () => reject(new Error("Lỗi đọc tệp tin."));
+              reader.readAsArrayBuffer(file);
+            });
+            const mammothResult = await mammoth.extractRawText({ arrayBuffer });
+            rawText = mammothResult.value;
+          } catch (err) {
+            console.warn(`Mammoth failed for ${file.name}:`, err);
+          }
+        } else if (fileExt === ".txt") {
+          try {
+            rawText = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                if (typeof e.target?.result === "string") {
+                  resolve(e.target.result);
+                } else {
+                  reject(new Error("Lỗi định dạng TXT."));
+                }
+              };
+              reader.onerror = () => reject(new Error("Lỗi đọc tệp tin."));
+              reader.readAsText(file);
+            });
+          } catch (err) {
+            console.warn(`Plain text reader failed for ${file.name}:`, err);
+          }
+        }
+
+        // Hướng 1: Replace Office file with text file
+        let fileToUpload: File = file;
+        let finalFileExt = fileExt;
+        let finalFileSizeStr = fileSizeStr;
+        if (rawText && [".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".rtf"].includes(fileExt)) {
+           const txtBlob = new Blob([rawText], { type: "text/plain" });
+           const newName = file.name.substring(0, file.name.lastIndexOf(".")) + ".txt";
+           fileToUpload = new File([txtBlob], newName, { type: "text/plain" });
+           finalFileExt = ".txt";
+           finalFileSizeStr = (fileToUpload.size / (1024 * 1024)).toFixed(3) + " MB";
+        }
+
+        // 2. Read file as Base64 and upload to server
+        setBulkStatuses(prev => ({ ...prev, [file.name]: "uploading" }));
         const base64Data = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = (e) => {
@@ -784,7 +840,7 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
             }
           };
           reader.onerror = () => reject(new Error("Lỗi đọc tệp tin cục bộ."));
-          reader.readAsDataURL(file);
+          reader.readAsDataURL(fileToUpload);
         });
 
         const uploadRes = await apiFetch("/api/documents/upload", {
@@ -794,7 +850,7 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
           },
           body: JSON.stringify({
             id: docId,
-            fileName: normalizedFileName,
+            fileName: fileToUpload.name,
             base64Data,
           }),
         });
@@ -886,9 +942,9 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
           subject: docCategory === "Tài liệu tham khảo" && docSubject === "Tất cả" ? "Tất cả" : docSubject,
           bookSeries: docCategory === "Sách giáo khoa" ? docBookSeries : undefined,
           refGroup: docCategory === "Tài liệu tham khảo" ? docRefGroup : undefined,
-          fileName: normalizedFileName,
-          fileSize: fileSizeStr,
-          fileExtension: fileExt,
+          fileName: fileToUpload.name,
+          fileSize: finalFileSizeStr,
+          fileExtension: finalFileExt,
           uploadDate: dateStr,
           notes: analysisData?.summary || `Hệ thống đã tải lên thành công tệp tin giáo án/tài liệu này trong gói tải lên hàng loạt.`,
           lessonTopic: analysisData?.lessonTopic || file.name.substring(0, file.name.lastIndexOf(".")) || file.name,
@@ -913,8 +969,8 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
         }
 
         // Add to rawFilesMap & IndexedDB
-        rawFilesMap.set(newDoc.id, file);
-        await saveFileToIndexedDB(newDoc.id, file);
+        rawFilesMap.set(newDoc.id, fileToUpload);
+        await saveFileToIndexedDB(newDoc.id, fileToUpload);
 
         // Prepend to list
         updatedDocumentsList.unshift(newDoc);
@@ -986,10 +1042,18 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
     const docId = Math.random().toString(36).substr(2, 9);
     
     let fileToUpload: File | null = selectedFile;
+    
+    // Hướng 1: Extract text and save as .txt to save space
+    const fileExtLower = fileToUpload?.name.split(".").pop()?.toLowerCase() || "";
+    if (fileToUpload && extractedText && ["doc", "docx", "ppt", "pptx", "xls", "xlsx", "rtf"].includes(fileExtLower)) {
+       const txtBlob = new Blob([extractedText], { type: "text/plain" });
+       const newName = fileToUpload.name.substring(0, fileToUpload.name.lastIndexOf(".")) + ".txt";
+       fileToUpload = new File([txtBlob], newName, { type: "text/plain" });
+    }
 
     const fileExt = fileToUpload ? "." + fileToUpload.name.split(".").pop() : ".pdf";
     const fileSizeStr = fileToUpload 
-      ? (fileToUpload.size / (1024 * 1024)).toFixed(1) + " MB" 
+      ? (fileToUpload.size / (1024 * 1024)).toFixed(3) + " MB" 
       : (1.5 + Math.random() * 4).toFixed(1) + " MB";
 
     // Simulate progress animation
