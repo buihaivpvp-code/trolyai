@@ -383,6 +383,7 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
   const [uploadMode, setUploadMode] = useState<"single" | "bulk">("single");
   const [selectedBulkFiles, setSelectedBulkFiles] = useState<File[]>([]);
   const [bulkStatuses, setBulkStatuses] = useState<{ [fileName: string]: "waiting" | "uploading" | "analyzing" | "success" | "error" }>({});
+  const [bulkErrors, setBulkErrors] = useState<{ [fileName: string]: string }>({});
   const [bulkMessage, setBulkMessage] = useState<string | null>(null);
 
   // Form Fields
@@ -737,12 +738,12 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
 
     const updatedDocumentsList = [...documents];
     
-    // Initialize all files to 'waiting'
     const initialStatuses: { [fileName: string]: "waiting" | "uploading" | "analyzing" | "success" | "error" } = {};
     selectedBulkFiles.forEach(f => {
       initialStatuses[f.name] = "waiting";
     });
     setBulkStatuses(initialStatuses);
+    setBulkErrors({});
 
     let successCount = 0;
     let failCount = 0;
@@ -908,6 +909,7 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
       } catch (err: any) {
         console.error(`Failed to bulk upload ${file.name}:`, err);
         setBulkStatuses(prev => ({ ...prev, [file.name]: "error" }));
+        setBulkErrors(prev => ({ ...prev, [file.name]: err.message || "Lỗi không xác định" }));
         failedFiles.push(file);
         failCount++;
       }
@@ -2517,6 +2519,11 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                             <span className="text-[9px] text-slate-400 font-mono block">
                               {(file.size / (1024 * 1024)).toFixed(2)} MB
                             </span>
+                            {status === "error" && bulkErrors[file.name] && (
+                              <span className="text-[10px] text-rose-600 font-bold block leading-tight mt-1 whitespace-normal break-words max-w-[220px]">
+                                ⚠️ {bulkErrors[file.name]}
+                              </span>
+                            )}
                           </div>
                         </div>
 
@@ -2542,7 +2549,10 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                             </span>
                           )}
                           {status === "error" && (
-                            <span className="text-[10px] bg-rose-50 text-rose-700 font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                            <span 
+                              className="text-[10px] bg-rose-50 text-rose-700 font-bold px-1.5 py-0.5 rounded flex items-center gap-1 cursor-help"
+                              title={bulkErrors[file.name] || "Lỗi không xác định"}
+                            >
                               <AlertCircle className="w-2.5 h-2.5 text-rose-600 mr-0.5 inline-block" /> Lỗi
                             </span>
                           )}
