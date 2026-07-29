@@ -8,20 +8,19 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { GoogleGenAI, Type } from "@google/genai";
-import { AssessmentValue } from "./src/types";
 
 // Load environment variables
 dotenv.config();
 
 // Import production-grade backend components
-import { Database } from "./backend/services/db.js";
-import { requestLogger } from "./backend/middleware/logger.js";
-import { globalErrorHandler } from "./backend/middleware/errorHandler.js";
-import { authenticateToken } from "./backend/middleware/auth.js";
-import authRouter from "./backend/routes/auth.js";
-import studentsRouter from "./backend/routes/students.js";
-import journalRouter from "./backend/routes/journal.js";
-import documentsRouter from "./backend/routes/documents.js";
+import { Database } from "./backend/services/db.ts";
+import { requestLogger } from "./backend/middleware/logger.ts";
+import { globalErrorHandler } from "./backend/middleware/errorHandler.ts";
+import { authenticateToken } from "./backend/middleware/auth.ts";
+import authRouter from "./backend/routes/auth.ts";
+import studentsRouter from "./backend/routes/students.ts";
+import journalRouter from "./backend/routes/journal.ts";
+import documentsRouter from "./backend/routes/documents.ts";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 2630;

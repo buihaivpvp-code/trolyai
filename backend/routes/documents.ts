@@ -1,7 +1,7 @@
 import { Router, Response } from "express";
-import { authenticateToken, AuthenticatedRequest } from "../middleware/auth";
-import { Logger } from "../middleware/logger";
-import { R2Storage } from "../services/r2Storage";
+import { authenticateToken, AuthenticatedRequest } from "../middleware/auth.ts";
+import { Logger } from "../middleware/logger.ts";
+import { R2Storage } from "../services/r2Storage.ts";
 
 const router = Router();
 

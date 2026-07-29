@@ -1,12 +1,12 @@
 import { Router, Response } from "express";
-import { Database } from "../services/db.js";
+import { Database } from "../services/db.ts";
 import {
   generateToken,
   authenticateToken,
   AuthenticatedRequest
-} from "../middleware/auth";
-import { Logger } from "../middleware/logger";
-import { getSupabaseClient, isSupabaseConfigured } from "../services/supabase";
+} from "../middleware/auth.ts";
+import { Logger } from "../middleware/logger.ts";
+import { getSupabaseClient, isSupabaseConfigured } from "../services/supabase.ts";
 
 const router = Router();
 

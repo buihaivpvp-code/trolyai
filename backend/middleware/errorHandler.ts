@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { Logger } from "./logger";
+import { Logger } from "./logger.ts";
 
 /**
  * Express error-handling middleware for full-stack API production robustness
