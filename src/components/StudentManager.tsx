@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from "react";
+import * as XLSX from "xlsx";
 import { Student } from "../types";
 import { apiFetch } from "../utils/api";
 import AcademicChart from "./AcademicChart";
@@ -248,6 +249,8 @@ export default function StudentManager({
   const [showAddForm, setShowAddForm] = useState(false);
   const [bulkError, setBulkError] = useState("");
   const [bulkSuccessMsg, setBulkSuccessMsg] = useState("");
+  const [importMode, setImportMode] = useState<"file" | "sheet" | "paste">("file");
+  const [googleSheetUrl, setGoogleSheetUrl] = useState("");
 
   const [notification, setNotification] = useState<{ type: "success" | "error"; text: string } | null>(null);
   
@@ -516,6 +519,80 @@ export default function StudentManager({
     }
   };
 
+  const handleExcelFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setBulkError("");
+    setBulkSuccessMsg("");
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = new Uint8Array(event.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: "array" });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const rows = XLSX.utils.sheet_to_json<any[]>(worksheet, { header: 1 });
+        
+        const parsedLines = rows
+          .map((row: any) => {
+            if (!Array.isArray(row) || row.length === 0) return "";
+            return row.map(cell => String(cell || "").trim()).join("\t");
+          })
+          .filter(line => line.trim().length > 0)
+          .join("\n");
+          
+        setBulkText(parsedLines);
+        setBulkSuccessMsg("Đọc tệp Excel thành công! Vui lòng kiểm tra lại nội dung phía dưới rồi nhấn 'Xác nhận tải danh sách'.");
+      } catch (err: any) {
+        setBulkError("Không thể đọc tệp Excel: " + err.message);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleGoogleSheetImport = async (url: string) => {
+    if (!url) {
+      setBulkError("Vui lòng nhập đường dẫn Google Sheets.");
+      return;
+    }
+    
+    setBulkError("");
+    setBulkSuccessMsg("");
+    
+    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    if (!match) {
+      setBulkError("Đường dẫn Google Sheets không hợp lệ. Vui lòng đảm bảo đúng định dạng URL bảng tính.");
+      return;
+    }
+    
+    const spreadsheetId = match[1];
+    const exportUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv`;
+    
+    try {
+      const response = await fetch(exportUrl);
+      if (!response.ok) {
+        throw new Error("Không thể truy cập Google Sheet. Vui lòng đảm bảo bạn đã chia sẻ quyền 'Bất kỳ ai có liên kết đều có thể xem'.");
+      }
+      
+      const csvText = await response.text();
+      const parsedLines = csvText
+        .split("\n")
+        .map(line => {
+          const parts = line.split(",").map(p => p.replace(/^"|"$/g, "").trim());
+          return parts.join("\t");
+        })
+        .filter(line => line.trim().length > 0)
+        .join("\n");
+        
+      setBulkText(parsedLines);
+      setBulkSuccessMsg("Tải dữ liệu từ Google Sheets thành công! Vui lòng kiểm tra lại nội dung phía dưới rồi nhấn 'Xác nhận tải danh sách'.");
+    } catch (err: any) {
+      setBulkError(err.message || "Lỗi tải Google Sheets.");
+    }
+  };
+
   // Bulk import parsing
   // Expecting format: Họ và tên [Tab/comma] Giới tính [Tab/comma] Ngày sinh [Tab/comma] SĐT
   // Example: 
@@ -525,19 +602,18 @@ export default function StudentManager({
     setBulkError("");
     setBulkSuccessMsg("");
     if (!bulkText.trim()) {
-      setBulkError("Vui lòng dán danh sách học sinh vào ô văn bản bên dưới.");
+      setBulkError("Vui lòng tải tệp hoặc nhập dữ liệu để bắt đầu.");
       return;
     }
 
     const lines = bulkText.split("\n");
-    let addedCount = 0;
-    let errors: string[] = [];
+    const studentsToRegister = [];
+    const errors: string[] = [];
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
 
-      // split by tab first, then fall back to robust separators
       let parts = line.split("\t");
       if (parts.length < 2) {
         const spaceParts = line.split(/\s{2,}/);
@@ -548,7 +624,6 @@ export default function StudentManager({
         } else if (line.includes(";")) {
           parts = line.split(";");
         } else {
-          // If only single spaces are used, try parsing name, gender, dob, phone smartly
           const spaceSplit = line.split(/\s+/);
           if (spaceSplit.length >= 4) {
             const lastPart = spaceSplit[spaceSplit.length - 1];
@@ -578,10 +653,8 @@ export default function StudentManager({
       }
 
       const genderClean: "Nam" | "Nữ" = (rawGender.toLowerCase() === "nữ" || rawGender.toLowerCase() === "nu") ? "Nữ" : "Nam";
-      // Ensure date format is YYYY-MM-DD
       let dobClean = rawDob;
       if (!/^\d{4}-\d{2}-\d{2}$/.test(rawDob)) {
-        // try parsing Vietnamese DD/MM/YYYY
         const dateParts = rawDob.split("/");
         if (dateParts.length === 3) {
           const d = dateParts[0].padStart(2, "0");
@@ -589,47 +662,45 @@ export default function StudentManager({
           const y = dateParts[2];
           dobClean = `${y}-${m}-${d}`;
         } else {
-          dobClean = "2016-01-01"; // default safe state
+          dobClean = "2016-01-01";
         }
       }
 
-      try {
-        const resp = await apiFetch("/api/students", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: rawName,
-            gender: genderClean,
-            dob: dobClean,
-            phone: rawPhone,
-            schoolGrade: schoolGrade,
-            schoolClass: schoolClass
-          })
-        });
+      studentsToRegister.push({
+        name: rawName,
+        gender: genderClean,
+        dob: dobClean,
+        phone: rawPhone,
+        schoolGrade: schoolGrade,
+        schoolClass: schoolClass
+      });
+    }
 
-        if (resp.ok) {
-          addedCount++;
-        } else {
-          try {
-            const errorData = await resp.json();
-            errors.push(`Dòng ${i+1} (${rawName}): ${errorData.error || "Máy chủ phản hồi từ chối."}`);
-          } catch {
-            errors.push(`Dòng ${i+1} (${rawName}): Máy chủ phản hồi từ chối.`);
-          }
-        }
-      } catch (e) {
-        errors.push(`Dòng ${i+1} (${rawName}): Lỗi kết nối mạng.`);
+    if (studentsToRegister.length === 0) {
+      setBulkError("Không tìm thấy học sinh hợp lệ nào để nhập.");
+      return;
+    }
+
+    try {
+      const resp = await apiFetch("/api/students/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(studentsToRegister)
+      });
+
+      if (resp.ok) {
+        const added = await resp.json();
+        setBulkSuccessMsg(`Đã nhập thành công ${added.length} học sinh mới vào hệ thống.`);
+        setBulkText("");
+        setGoogleSheetUrl("");
+        fetchStudents();
+        if (onStudentsChanged) onStudentsChanged();
+      } else {
+        const errorData = await resp.json();
+        setBulkError(`Không thể lưu danh sách: ${errorData.error || "Lỗi máy chủ."}`);
       }
-    }
-
-    if (addedCount > 0) {
-      setBulkSuccessMsg(`Đã nhập thành thạo ${addedCount} học sinh mới thành công vào hệ thống.`);
-      setBulkText("");
-      fetchStudents();
-      if (onStudentsChanged) onStudentsChanged();
-    }
-    if (errors.length > 0) {
-      setBulkError(`Một số dòng gặp lỗi:\n${errors.slice(0, 5).join("\n")}${errors.length > 5 ? `\n... và ${errors.length - 5} lỗi khác.` : ""}`);
+    } catch (e) {
+      setBulkError("Lỗi kết nối mạng khi tải dữ liệu lên.");
     }
   };
 
@@ -712,59 +783,150 @@ export default function StudentManager({
           <div className="flex items-start gap-3">
             <Clipboard className="w-5 h-5 text-amber-600 mt-0.5" />
             <div>
-              <h3 className="font-bold text-slate-800 text-sm">Nhập danh sách nhanh từ Excel / Word</h3>
+              <h3 className="font-bold text-slate-800 text-sm">Nhập danh sách học sinh hàng loạt</h3>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Sao chép trực tiếp các cột từ bảng Excel rồi dán vào khung dưới đây. Hệ thống sẽ phân tích cú pháp tự động.
-                <br />
-                Định dạng gợi ý: <code className="bg-amber-100 px-1 py-0.5 rounded text-amber-900 font-mono font-bold">Họ tên [Tab hoặc phẩy] Giới tính [Tab hoặc phẩy] Ngày sinh YYYY-MM-DD [Tab hoặc phẩy] SĐT bố mẹ</code>
+                Chọn phương thức nhập dữ liệu học sinh hàng loạt bằng cách tải tệp Excel, nhập liên kết Google Sheets công khai, hoặc sao chép và dán trực tiếp.
               </p>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <textarea
-              value={bulkText}
-              onChange={(e) => setBulkText(e.target.value)}
-              placeholder="Ví dụ:&#10;Nguyễn Hồng Nhung	Nữ	2016-05-15	0905123456&#10;Trần Hùng Cường	Nam	2016-09-20	0987654321"
-              rows={5}
-              className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm font-mono focus:outline-hidden focus:ring-2 focus:ring-amber-500"
-            />
-            
-            <div className="flex justify-between items-center flex-wrap gap-2">
+          {/* Import Mode Tabs */}
+          <div className="flex gap-2 border-b border-amber-200 pb-2 mb-3">
+            <button
+              type="button"
+              onClick={() => setImportMode("file")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border-none ${
+                importMode === "file" ? "bg-amber-600 text-white" : "text-amber-800 hover:bg-amber-100/70"
+              }`}
+            >
+              Tải tệp Excel / CSV
+            </button>
+            <button
+              type="button"
+              onClick={() => setImportMode("sheet")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border-none ${
+                importMode === "sheet" ? "bg-amber-600 text-white" : "text-amber-800 hover:bg-amber-100/70"
+              }`}
+            >
+              Nhập từ Google Sheets
+            </button>
+            <button
+              type="button"
+              onClick={() => setImportMode("paste")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border-none ${
+                importMode === "paste" ? "bg-amber-600 text-white" : "text-amber-800 hover:bg-amber-100/70"
+              }`}
+            >
+              Dán văn bản Copy
+            </button>
+          </div>
+
+          {/* Mode 1: File Upload */}
+          {importMode === "file" && (
+            <div className="bg-white border border-slate-200 rounded-xl p-4 text-center space-y-3">
+              <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-200 rounded-xl hover:bg-slate-50 transition-all cursor-pointer relative">
+                <Upload className="w-8 h-8 text-slate-400 mb-2" />
+                <span className="text-xs font-semibold text-slate-600">Kéo thả hoặc click để tải lên tệp tin (.xlsx, .xls, .csv)</span>
+                <input
+                  type="file"
+                  accept=".xlsx, .xls, .csv"
+                  onChange={handleExcelFileUpload}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Mode 2: Google Sheets */}
+          {importMode === "sheet" && (
+            <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+              <label className="text-xs font-bold text-slate-600 block">Đường dẫn Google Sheets (Công khai)</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={googleSheetUrl}
+                  onChange={(e) => setGoogleSheetUrl(e.target.value)}
+                  placeholder="Ví dụ: https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKv1S6pVxwK59/edit?usp=sharing"
+                  className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs focus:outline-hidden focus:ring-2 focus:ring-amber-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleGoogleSheetImport(googleSheetUrl)}
+                  className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-2 rounded-lg text-xs cursor-pointer border-none transition-colors"
+                >
+                  Tải dữ liệu
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-400 leading-normal">
+                * Lưu ý: Trang tính phải được chia sẻ công khai ở quyền "Bất kỳ ai có liên kết đều có thể xem" (Anyone with link can view).
+              </p>
+            </div>
+          )}
+
+          {/* Mode 3: Text Paste */}
+          {importMode === "paste" && (
+            <div className="space-y-2">
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Định dạng gợi ý: <code className="bg-amber-100 px-1 py-0.5 rounded text-amber-900 font-mono font-bold">Họ tên [Tab hoặc phẩy] Giới tính [Tab hoặc phẩy] Ngày sinh YYYY-MM-DD [Tab hoặc phẩy] SĐT bố mẹ</code>
+              </p>
+              <textarea
+                value={bulkText}
+                onChange={(e) => setBulkText(e.target.value)}
+                placeholder="Ví dụ:&#10;Nguyễn Hồng Nhung	Nữ	2016-05-15	0905123456&#10;Trần Hùng Cường	Nam	2016-09-20	0987654321"
+                rows={5}
+                className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm font-mono focus:outline-hidden focus:ring-2 focus:ring-amber-500"
+              />
               <button
                 type="button"
                 onClick={loadExampleData}
-                className="text-amber-800 hover:text-amber-900 text-xs font-semibold underline flex items-center gap-1"
+                className="text-amber-800 hover:text-amber-900 text-xs font-semibold underline flex items-center gap-1 border-none bg-transparent cursor-pointer"
                 id="btn-load-example"
               >
                 <Sparkles className="w-3 h-3" />
                 Tải văn bản mẫu để xem cấu trúc
               </button>
-              
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setBulkText("");
-                    setBulkError("");
-                    setBulkSuccessMsg("");
-                  }}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-3 py-1.5 rounded-lg text-xs"
-                >
-                  Xóa trống
-                </button>
-                <button
-                  type="button"
-                  onClick={handleBulkImport}
-                  className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-1.5 rounded-lg text-xs flex items-center gap-1.5 cursor-pointer shadow-sm transition-colors"
-                  id="btn-confirm-bulk"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  Xác nhận tải danh sách lớp
-                </button>
-              </div>
             </div>
-          </div>
+          )}
+
+          {/* Display current preview text area if it has loaded contents from file/sheet */}
+          {importMode !== "paste" && bulkText.trim() && (
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-700 block">Dữ liệu đã trích xuất (Có thể chỉnh sửa thủ công nếu cần):</label>
+              <textarea
+                value={bulkText}
+                onChange={(e) => setBulkText(e.target.value)}
+                rows={4}
+                className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs font-mono focus:outline-hidden focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+          )}
+
+          {/* Action buttons if bulkText has contents */}
+          {bulkText.trim() && (
+            <div className="flex justify-end gap-2 pt-2 border-t border-amber-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setBulkText("");
+                  setBulkError("");
+                  setBulkSuccessMsg("");
+                  setGoogleSheetUrl("");
+                }}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-3 py-1.5 rounded-lg text-xs border-none cursor-pointer"
+              >
+                Xóa trống
+              </button>
+              <button
+                type="button"
+                onClick={handleBulkImport}
+                className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-1.5 rounded-lg text-xs flex items-center gap-1.5 cursor-pointer border-none shadow-sm transition-colors"
+                id="btn-confirm-bulk"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Xác nhận tải danh sách lớp
+              </button>
+            </div>
+          )}
 
           {bulkError && (
             <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-rose-800 text-xs whitespace-pre-line font-mono">
