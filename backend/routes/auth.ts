@@ -7,8 +7,21 @@ import {
 } from "../middleware/auth.ts";
 import { Logger } from "../middleware/logger.ts";
 import { getSupabaseClient, isSupabaseConfigured } from "../services/supabase.ts";
+import { R2Storage } from "../services/r2Storage.ts";
 
 const router = Router();
+
+function sanitizeFolderName(name: string): string {
+  if (!name) return "giaovien";
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .replace(/[^a-zA-Z0-9]/g, "_")
+    .replace(/_+/g, "_")
+    .trim();
+}
 
 function buildLocalUserFromAuth(params: {
   existingUser?: any;
@@ -128,6 +141,21 @@ router.post("/register", async (req, res, next) => {
       users.push(localUser);
     }
     Database.saveUsers(users);
+
+    // Create R2 folder placeholder named after the teacher
+    if (R2Storage.isEnabled()) {
+      const folderName = `${sanitizeFolderName(cleanName)}_${authUserId}`;
+      try {
+        await R2Storage.uploadDocument({
+          key: `${folderName}/.created`,
+          body: Buffer.from("created"),
+          contentType: "text/plain"
+        });
+        Logger.info(`Created R2 folder placeholder for teacher: ${folderName}`);
+      } catch (err) {
+        Logger.warn(`Failed to create R2 folder placeholder for ${cleanEmail}:`, err);
+      }
+    }
 
     const authResponse = issueAppAuthResponse(localUser, rememberMe);
     Logger.info(`Registered new Supabase-backed user account: ${localUser.email}`);

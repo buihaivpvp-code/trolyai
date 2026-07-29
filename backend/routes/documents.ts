@@ -6,6 +6,18 @@ import { Database } from "../services/db.ts";
 
 const router = Router();
 
+function sanitizeFolderName(name: string): string {
+  if (!name) return "giaovien";
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .replace(/[^a-zA-Z0-9]/g, "_")
+    .replace(/_+/g, "_")
+    .trim();
+}
+
 type DriveScanItem = {
   id: string;
   name: string;
@@ -267,10 +279,10 @@ router.post("/upload", authenticateToken as any, async (req: AuthenticatedReques
 
     const buffer = Buffer.from(cleanBase64, "base64");
 
-    // Save file as UPLOADS_DIR/id_fileName with sanitization to prevent path traversal vulnerability
+    // Save file inside a virtual folder based on teacher's name and ID
     const sanitizedName = fileName.replace(/[^a-zA-Z0-9.\-_]/g, "_");
-    const ownerPrefix = req.user?.id ? `${req.user.id}_` : "";
-    const safeFileName = `${ownerPrefix}${id}_${sanitizedName}`;
+    const folderName = `${sanitizeFolderName(req.user?.name || "giaovien")}_${req.user?.id || "public"}`;
+    const safeFileName = `${folderName}/${id}_${sanitizedName}`;
     const contentType = inferContentType(sanitizedName);
 
     if (!R2Storage.isEnabled()) {
@@ -354,8 +366,8 @@ router.get("/download/:id", authenticateToken as any, async (req: AuthenticatedR
       return res.status(503).send("S3/R2 object storage is not configured");
     }
 
-    const ownerPrefix = req.user?.id ? `${req.user.id}_` : "";
-    const objectKey = await R2Storage.findDocumentKey(`${ownerPrefix}${id}_`);
+    const folderName = `${sanitizeFolderName(req.user?.name || "giaovien")}_${req.user?.id || "public"}`;
+    const objectKey = await R2Storage.findDocumentKey(`${folderName}/${id}_`);
     if (!objectKey) {
       return res.status(404).send("File not found");
     }
@@ -365,7 +377,7 @@ router.get("/download/:id", authenticateToken as any, async (req: AuthenticatedR
       return res.status(404).send("File not found");
     }
 
-    const filePrefix = `${ownerPrefix}${id}_`;
+    const filePrefix = `${folderName}/${id}_`;
     const originalName = objectKey.startsWith(filePrefix) ? objectKey.slice(filePrefix.length) : objectKey;
     Logger.info(`Document download triggered from object storage: ${objectKey}`);
     res.setHeader("Content-Type", storedObject.contentType || inferContentType(originalName));
@@ -438,8 +450,8 @@ router.delete("/:id", authenticateToken as any, async (req: AuthenticatedRequest
 
     // 1. Delete from R2 object storage if it's uploaded
     if (R2Storage.isEnabled()) {
-      const ownerPrefix = req.user?.id ? `${req.user.id}_` : "";
-      const objectKey = await R2Storage.findDocumentKey(`${ownerPrefix}${id}_`);
+      const folderName = `${sanitizeFolderName(req.user?.name || "giaovien")}_${req.user?.id || "public"}`;
+      const objectKey = await R2Storage.findDocumentKey(`${folderName}/${id}_`);
       if (objectKey) {
         await R2Storage.deleteDocument(objectKey);
       }
