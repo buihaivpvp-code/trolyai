@@ -151,3 +151,19 @@ CREATE TABLE IF NOT EXISTS documents (
   "extractedText" TEXT,
   "isUploaded" BOOLEAN DEFAULT TRUE
 );
+
+-- 14. Configure Row Level Security (RLS)
+-- Create a permissive policy so the backend (using Anon key) can read/write data
+DO $$
+DECLARE
+    t_name text;
+BEGIN
+    FOR t_name IN 
+        SELECT table_name FROM information_schema.tables 
+        WHERE table_schema = 'public'
+    LOOP
+        EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY;', t_name);
+        EXECUTE format('DROP POLICY IF EXISTS "Allow all access" ON %I;', t_name);
+        EXECUTE format('CREATE POLICY "Allow all access" ON %I FOR ALL USING (true) WITH CHECK (true);', t_name);
+    END LOOP;
+END $$;

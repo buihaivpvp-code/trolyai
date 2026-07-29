@@ -27,7 +27,7 @@ interface AuthProps {
 }
 
 export default function Auth({ onAuthSuccess }: AuthProps) {
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const [mode, setMode] = useState<"login" | "register" | "forgot_password">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -57,10 +57,12 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
     setSuccess(null);
     setLoading(true);
 
-    const url = mode === "login" ? "/api/auth/login" : "/api/auth/register";
+    const url = mode === "login" ? "/api/auth/login" : mode === "register" ? "/api/auth/register" : "/api/auth/reset-password";
     const body = mode === "login" 
       ? { email, password, rememberMe } 
-      : { email, password, name, classCode, rememberMe };
+      : mode === "register"
+        ? { email, password, name, classCode, rememberMe }
+        : { email };
 
     try {
       const response = await apiFetch(url, {
@@ -111,6 +113,13 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
       if (mode === "register") {
         setSuccess("Đăng ký tài khoản thành công! Vui lòng đăng nhập để bắt đầu.");
         setPassword("");
+        setMode("login");
+        setLoading(false);
+        return;
+      }
+
+      if (mode === "forgot_password") {
+        setSuccess("Đã gửi email khôi phục mật khẩu. Vui lòng kiểm tra hộp thư của bạn.");
         setMode("login");
         setLoading(false);
         return;
@@ -250,12 +259,14 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
 
             <div className="mb-6">
               <h3 className="text-xl font-bold text-white tracking-tight">
-                {mode === "login" ? "Chào mừng Thầy Cô quay trở lại" : "Tạo tài khoản giáo viên mới"}
+                {mode === "login" ? "Chào mừng Thầy Cô quay trở lại" : mode === "register" ? "Tạo tài khoản giáo viên mới" : "Khôi phục mật khẩu"}
               </h3>
               <p className="text-xs text-slate-400 mt-1">
                 {mode === "login" 
                   ? "Vui lòng nhập tài khoản để truy cập kho học liệu và danh sách lớp học." 
-                  : "Đăng ký tài khoản lớp học để thiết lập học bạ & sổ sách năm học 2026."}
+                  : mode === "register"
+                    ? "Đăng ký tài khoản lớp học để thiết lập học bạ & sổ sách năm học 2026."
+                    : "Nhập địa chỉ email của bạn để nhận liên kết đặt lại mật khẩu."}
               </p>
             </div>
 
@@ -320,32 +331,45 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">Mật khẩu bảo mật:</label>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
-                  <input
-                    type="password"
-                    required
-                    placeholder="Tối thiểu 6 ký tự"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full text-xs pl-10 pr-4 py-3 bg-slate-900 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-white placeholder-slate-500"
-                  />
+              {mode !== "forgot_password" && (
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">Mật khẩu bảo mật:</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
+                    <input
+                      type="password"
+                      required
+                      placeholder="Tối thiểu 6 ký tự"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full text-xs pl-10 pr-4 py-3 bg-slate-900 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-white placeholder-slate-500"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div className="flex items-center justify-between pt-1 pb-1">
-                <label className="flex items-center gap-2.5 cursor-pointer select-none text-xs text-slate-300 hover:text-white transition-colors" id="auth-remember-me-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="rounded border-slate-800 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-950 w-4.5 h-4.5 cursor-pointer accent-indigo-600"
-                  />
-                  <span>Ghi nhớ đăng nhập</span>
-                </label>
-              </div>
+              {mode !== "forgot_password" && (
+                <div className="flex items-center justify-between pt-1 pb-1">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none text-xs text-slate-300 hover:text-white transition-colors" id="auth-remember-me-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="rounded border-slate-800 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-950 w-4.5 h-4.5 cursor-pointer accent-indigo-600"
+                    />
+                    <span>Ghi nhớ đăng nhập</span>
+                  </label>
+                  {mode === "login" && (
+                    <button
+                      type="button"
+                      onClick={() => { setMode("forgot_password"); setError(null); setSuccess(null); }}
+                      className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors bg-transparent border-none cursor-pointer"
+                    >
+                      Quên mật khẩu?
+                    </button>
+                  )}
+                </div>
+              )}
 
               {mode === "register" && (
                 <div className="space-y-1.5">
@@ -376,7 +400,7 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
                   </>
                 ) : (
                   <>
-                    <span>{mode === "login" ? "Đăng Nhập Ngay" : "Hoàn Tất Đăng Ký"}</span>
+                    <span>{mode === "login" ? "Đăng Nhập Ngay" : mode === "register" ? "Hoàn Tất Đăng Ký" : "Gửi Yêu Cầu"}</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -399,6 +423,18 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
                   className="px-3.5 py-1.5 bg-indigo-600/15 text-indigo-400 hover:bg-indigo-600/25 rounded-xl text-[10px] font-bold transition-all cursor-pointer border-none whitespace-nowrap self-stretch sm:self-center text-center"
                 >
                   Điền nhanh
+                </button>
+              </div>
+            )}
+            
+            {mode === "forgot_password" && (
+              <div className="mt-6 text-center">
+                <button
+                  type="button"
+                  onClick={() => { setMode("login"); setError(null); setSuccess(null); }}
+                  className="text-xs text-slate-400 hover:text-white transition-colors bg-transparent border-none cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  <ArrowRight className="w-3.5 h-3.5 rotate-180" /> Quay lại đăng nhập
                 </button>
               </div>
             )}

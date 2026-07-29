@@ -261,6 +261,36 @@ router.post("/login", async (req, res, next) => {
 });
 
 /**
+ * @route POST /api/auth/reset-password
+ * @desc Request a password reset email via Supabase
+ * @access Public
+ */
+router.post("/reset-password", async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: "Vui lòng nhập địa chỉ Email." });
+    }
+
+    if (!isSupabaseConfigured()) {
+      return res.status(500).json({ error: "Supabase chưa được cấu hình trên máy chủ." });
+    }
+
+    const supabase = getSupabaseClient();
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
+
+    if (error) {
+      Logger.error(`Supabase password reset failed for ${email}: ${error.message}`);
+      return res.status(400).json({ error: error.message || "Không thể gửi yêu cầu khôi phục mật khẩu." });
+    }
+
+    res.json({ message: "Đã gửi email khôi phục mật khẩu. Vui lòng kiểm tra hộp thư của bạn." });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * @route GET /api/auth/me
  * @desc Get currently authenticated user credentials
  * @access Private
