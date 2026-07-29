@@ -643,26 +643,28 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
     return getDocumentsStorageKey(user);
   };
 
-  // Load from localStorage on mount and when user changes
+  // Load from database on mount and when user changes
   useEffect(() => {
-    const key = getStorageKey();
-    const saved = localStorage.getItem(key);
-    if (saved) {
+    let active = true;
+    const loadDocs = async () => {
       try {
-        setDocuments(JSON.parse(saved));
+        const res = await apiFetch("/api/documents");
+        if (res.ok && active) {
+          const data = await res.json();
+          setDocuments(data);
+        }
       } catch (e) {
-        console.error("Error reading saved documents", e);
+        console.error("Error loading documents from database:", e);
       }
-    } else {
-      setDocuments([]);
-    }
+    };
+    loadDocs();
+    return () => {
+      active = false;
+    };
   }, [user]);
 
-  // Save to localStorage when documents change
   const saveDocs = (newDocs: DocumentItem[]) => {
     setDocuments(newDocs);
-    const key = getStorageKey();
-    localStorage.setItem(key, JSON.stringify(newDocs));
   };
 
   // Drag and drop handlers
@@ -881,6 +883,19 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
           isUploaded: true
         };
 
+        // POST metadata to database
+        const metaRes = await apiFetch("/api/documents", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(newDoc)
+        });
+
+        if (!metaRes.ok) {
+          throw new Error("Không thể lưu thông tin tài liệu vào cơ sở dữ liệu.");
+        }
+
         // Add to rawFilesMap & IndexedDB
         rawFilesMap.set(newDoc.id, file);
         await saveFileToIndexedDB(newDoc.id, file);
@@ -1031,12 +1046,24 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
         isUploaded: isUploaded || undefined
       };
 
-      const updated = [newDoc, ...documents];
+      // POST metadata to database
+      const metaRes = await apiFetch("/api/documents", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newDoc)
+      });
+
+      if (!metaRes.ok) {
+        throw new Error("Không thể lưu thông tin tài liệu vào cơ sở dữ liệu.");
+      }
+
       if (fileToUpload) {
         rawFilesMap.set(newDoc.id, fileToUpload);
         await saveFileToIndexedDB(newDoc.id, fileToUpload);
       }
-      saveDocs(updated);
+      setDocuments(prev => [newDoc, ...prev]);
 
       setIsUploading(false);
       setUploadSuccess(true);
@@ -1065,17 +1092,30 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
 
   const handleConfirmDelete = async () => {
     if (deleteTarget) {
-      const updated = documents.filter(d => d.id !== deleteTarget.id);
-      saveDocs(updated);
-      rawFilesMap.delete(deleteTarget.id);
-      await deleteFileFromIndexedDB(deleteTarget.id);
-      if (previewDoc?.id === deleteTarget.id) {
-        setPreviewDoc(null);
+      try {
+        const res = await apiFetch(`/api/documents/${deleteTarget.id}`, {
+          method: "DELETE"
+        });
+        if (!res.ok) {
+          throw new Error("Không thể xóa tài liệu trên máy chủ.");
+        }
+
+        const updated = documents.filter(d => d.id !== deleteTarget.id);
+        setDocuments(updated);
+        rawFilesMap.delete(deleteTarget.id);
+        await deleteFileFromIndexedDB(deleteTarget.id);
+        if (previewDoc?.id === deleteTarget.id) {
+          setPreviewDoc(null);
+        }
+        if (hoveredDoc?.id === deleteTarget.id) {
+          setHoveredDoc(null);
+        }
+      } catch (err) {
+        console.error("Lỗi khi xóa tài liệu:", err);
+        alert("Lỗi khi xóa tài liệu từ cơ sở dữ liệu. Vui lòng thử lại.");
+      } finally {
+        setDeleteTarget(null);
       }
-      if (hoveredDoc?.id === deleteTarget.id) {
-        setHoveredDoc(null);
-      }
-      setDeleteTarget(null);
     }
   };
 

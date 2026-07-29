@@ -2,6 +2,7 @@ import { Router, Response } from "express";
 import { authenticateToken, AuthenticatedRequest } from "../middleware/auth.ts";
 import { Logger } from "../middleware/logger.ts";
 import { R2Storage } from "../services/r2Storage.ts";
+import { Database } from "../services/db.ts";
 
 const router = Router();
 
@@ -268,7 +269,8 @@ router.post("/upload", authenticateToken as any, async (req: AuthenticatedReques
 
     // Save file as UPLOADS_DIR/id_fileName with sanitization to prevent path traversal vulnerability
     const sanitizedName = fileName.replace(/[^a-zA-Z0-9.\-_]/g, "_");
-    const safeFileName = `${id}_${sanitizedName}`;
+    const ownerPrefix = req.user?.id ? `${req.user.id}_` : "";
+    const safeFileName = `${ownerPrefix}${id}_${sanitizedName}`;
     const contentType = inferContentType(sanitizedName);
 
     if (!R2Storage.isEnabled()) {
@@ -352,7 +354,8 @@ router.get("/download/:id", authenticateToken as any, async (req: AuthenticatedR
       return res.status(503).send("S3/R2 object storage is not configured");
     }
 
-    const objectKey = await R2Storage.findDocumentKey(`${id}_`);
+    const ownerPrefix = req.user?.id ? `${req.user.id}_` : "";
+    const objectKey = await R2Storage.findDocumentKey(`${ownerPrefix}${id}_`);
     if (!objectKey) {
       return res.status(404).send("File not found");
     }
@@ -362,11 +365,92 @@ router.get("/download/:id", authenticateToken as any, async (req: AuthenticatedR
       return res.status(404).send("File not found");
     }
 
-    const originalName = objectKey.startsWith(`${id}_`) ? objectKey.slice(id.length + 1) : objectKey;
+    const filePrefix = `${ownerPrefix}${id}_`;
+    const originalName = objectKey.startsWith(filePrefix) ? objectKey.slice(filePrefix.length) : objectKey;
     Logger.info(`Document download triggered from object storage: ${objectKey}`);
     res.setHeader("Content-Type", storedObject.contentType || inferContentType(originalName));
     res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(originalName)}"`);
     return res.send(storedObject.body);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * @route GET /api/documents
+ * @desc Fetch all documents for the authenticated teacher
+ * @access Private
+ */
+router.get("/", authenticateToken as any, (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const ownerId = req.user?.role === "admin" ? undefined : req.user?.id;
+    const documents = Database.getDocuments(ownerId);
+    res.json(documents);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * @route POST /api/documents
+ * @desc Save new document metadata
+ * @access Private
+ */
+router.post("/", authenticateToken as any, (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const ownerId = req.user?.role === "admin" ? undefined : req.user?.id;
+    const currentDocuments = Database.getDocuments(ownerId);
+    const newDoc = req.body;
+
+    if (!newDoc.id || !newDoc.name) {
+      return res.status(400).json({ error: "Missing required fields in document metadata." });
+    }
+
+    // Ensure ownerId is set on the document metadata
+    const docWithOwner = {
+      ...newDoc,
+      ownerId
+    };
+
+    currentDocuments.push(docWithOwner);
+    Database.saveDocuments(currentDocuments, ownerId);
+    res.status(201).json(docWithOwner);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * @route DELETE /api/documents/:id
+ * @desc Delete document metadata and remove from S3/R2 storage
+ * @access Private
+ */
+router.delete("/:id", authenticateToken as any, async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const { id } = req.params;
+    const ownerId = req.user?.role === "admin" ? undefined : req.user?.id;
+    const currentDocuments = Database.getDocuments(ownerId);
+    const targetDoc = currentDocuments.find(d => d.id === id);
+
+    if (!targetDoc) {
+      return res.status(404).json({ error: "Không tìm thấy tài liệu cần xóa." });
+    }
+
+    // 1. Delete from R2 object storage if it's uploaded
+    if (R2Storage.isEnabled()) {
+      const ownerPrefix = req.user?.id ? `${req.user.id}_` : "";
+      const objectKey = await R2Storage.findDocumentKey(`${ownerPrefix}${id}_`);
+      if (objectKey) {
+        await R2Storage.deleteDocument(objectKey);
+      }
+    }
+
+    // 2. Delete metadata from database
+    const updatedDocs = currentDocuments.filter(d => d.id !== id);
+    Database.saveDocuments(updatedDocs, ownerId);
+
+    Logger.info(`Deleted document ${id} for user ${req.user?.email}`);
+    res.json({ success: true });
   } catch (err) {
     next(err);
   }

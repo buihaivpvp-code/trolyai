@@ -1,4 +1,5 @@
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
   ListObjectsV2Command,
@@ -238,6 +239,25 @@ class R2StorageService {
       };
     } catch {
       return null;
+    }
+  }
+
+  async deleteDocument(key: string): Promise<boolean> {
+    if (!this.client || !this.bucketName) {
+      return false;
+    }
+
+    try {
+      await this.client.send(
+        new DeleteObjectCommand({
+          Bucket: this.bucketName,
+          Key: key,
+        })
+      );
+      return true;
+    } catch (e) {
+      console.error(`[R2Storage] Failed to delete key ${key}:`, e);
+      return false;
     }
   }
 }

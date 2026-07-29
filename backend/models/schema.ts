@@ -162,3 +162,28 @@ export interface ClassJournalInfractionSchema {
   studentName: string; // VARCHAR, NOT NULL
   note: string;        // TEXT, NOT NULL
 }
+
+/**
+ * 13. DOCUMENTS TABLE SCHEMA (Metadata of uploaded lesson plans and reference books)
+ */
+export interface DocumentSchema {
+  id: string;          // VARCHAR, PRIMARY KEY
+  ownerId?: string;    // VARCHAR, partition key by authenticated account
+  name: string;        // VARCHAR, NOT NULL
+  category: "Giáo án" | "Sách giáo khoa" | "Tài liệu tham khảo"; // VARCHAR, NOT NULL
+  grade: string;       // VARCHAR, NOT NULL
+  subject: string;     // VARCHAR, NOT NULL
+  bookSeries?: string; // VARCHAR
+  refGroup?: string;   // VARCHAR
+  fileName: string;    // VARCHAR, NOT NULL
+  fileSize: string;    // VARCHAR, NOT NULL
+  fileExtension: string; // VARCHAR, NOT NULL
+  uploadDate: string;  // VARCHAR, NOT NULL
+  notes?: string;      // TEXT
+  lessonTopic?: string; // VARCHAR
+  aiSummary?: string;  // TEXT
+  aiKeyActivities?: string[]; // TEXT[] (stored as json/text in SQLite/JSON)
+  aiObjectives?: string[];    // TEXT[]
+  extractedText?: string;     // TEXT
+  isUploaded?: boolean;       // BOOLEAN
+}

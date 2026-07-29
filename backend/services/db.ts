@@ -14,7 +14,8 @@ import {
   ClassJournalSchema,
   ClassJournalPraiseSchema,
   ClassJournalInfractionSchema,
-  AssessmentValue
+  AssessmentValue,
+  DocumentSchema
 } from "../models/schema";
 import { getSupabaseClient, isSupabaseConfigured } from "./supabase";
 
@@ -37,6 +38,7 @@ const JOURNALS_BASE_FILE = path.join(DATA_DIR, "journals_base.json");
 const JOURNAL_PRAISES_FILE = path.join(DATA_DIR, "journal_praises.json");
 const JOURNAL_INFRACTIONS_FILE = path.join(DATA_DIR, "journal_infractions.json");
 const MONTHLY_GRADES_FILE = path.join(DATA_DIR, "monthly_grades.json");
+const DOCUMENTS_FILE = path.join(DATA_DIR, "documents.json");
 
 const OLD_STUDENTS_FILE = path.join(DATA_DIR, "students.json");
 const OLD_JOURNALS_FILE = path.join(DATA_DIR, "journals.json");
@@ -271,10 +273,11 @@ export async function refreshCacheFromSupabase(force = false) {
     return;
   }
   try {
-    const [users, students, journals] = await Promise.all([
+    const [users, students, journals, documents] = await Promise.all([
       readTable<UserSchema[]>("users", []),
       readTable<StudentSchema[]>("students_base", []),
-      readTable<ClassJournalSchema[]>("journals_base", [])
+      readTable<ClassJournalSchema[]>("journals_base", []),
+      readTable<DocumentSchema[]>("documents", [])
     ]);
     
     if (users.length > 0) {
@@ -285,6 +288,9 @@ export async function refreshCacheFromSupabase(force = false) {
     }
     if (journals.length > 0) {
       saveJournalsRelational(journals, undefined);
+    }
+    if (documents.length > 0) {
+      writeJsonAtomic(DOCUMENTS_FILE, documents);
     }
     lastRefreshed = now;
   } catch (e) {
@@ -299,6 +305,7 @@ export async function runMigrationsAndSeeding() {
     if (!fs.existsSync(USERS_FILE)) writeJsonAtomic(USERS_FILE, initialUsers);
     if (!fs.existsSync(STUDENTS_BASE_FILE)) saveStudentsRelational(seedStudents);
     if (!fs.existsSync(JOURNALS_BASE_FILE)) saveJournalsRelational(seedJournals);
+    if (!fs.existsSync(DOCUMENTS_FILE)) writeJsonAtomic(DOCUMENTS_FILE, []);
     return;
   }
 
@@ -316,6 +323,11 @@ export async function runMigrationsAndSeeding() {
     const journals = await readTable<ClassJournalSchema[]>("journals_base", []);
     if (journals.length === 0) {
       saveJournalsRelational(seedJournals);
+    }
+
+    const documents = await readTable<DocumentSchema[]>("documents", []);
+    if (documents.length === 0) {
+      await replaceTable("documents", []);
     }
     
     await refreshCacheFromSupabase(true);
@@ -430,5 +442,21 @@ export const Database = {
     if (isSupabaseConfigured()) void replaceTable("journals_base", readJsonSafe<ClassJournalSchema[]>(JOURNALS_BASE_FILE, []));
     if (isSupabaseConfigured()) void replaceTable("journal_praises", readJsonSafe<ClassJournalPraiseSchema[]>(JOURNAL_PRAISES_FILE, []));
     if (isSupabaseConfigured()) void replaceTable("journal_infractions", readJsonSafe<ClassJournalInfractionSchema[]>(JOURNAL_INFRACTIONS_FILE, []));
+  },
+
+  getDocuments(ownerId?: string): DocumentSchema[] {
+    const all = readJsonSafe<DocumentSchema[]>(DOCUMENTS_FILE, []);
+    return all.filter((doc) => matchesOwner(doc, ownerId));
+  },
+
+  saveDocuments(documents: DocumentSchema[], ownerId?: string) {
+    const scoped = ownerId ? documents.map((doc) => withOwnerId(doc, ownerId)) : documents;
+    const all = readJsonSafe<DocumentSchema[]>(DOCUMENTS_FILE, []);
+    const preserved = ownerId ? all.filter((doc) => doc.ownerId !== ownerId) : [];
+    const merged = [...preserved, ...scoped];
+    writeJsonAtomic(DOCUMENTS_FILE, merged);
+    if (isSupabaseConfigured()) {
+      void replaceTable("documents", merged);
+    }
   }
 };
