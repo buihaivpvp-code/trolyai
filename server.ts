@@ -1678,11 +1678,11 @@ app.post("/api/gemini/slides", async (req, res): Promise<any> => {
     slidesList.push({
       slideNumber: 1,
       part: "Mở đầu",
-      title: `CHÀO MỪNG TIẾT HỌC - ${finalTopic.toUpperCase()}`,
+      title: `🌟 CHÀO MỪNG TIẾT HỌC - ${finalTopic.toUpperCase()} 🌟`,
       points: [
-        `Chào mừng cả lớp đến với tiết học môn ${finalSubject} - lớp ${finalGrade}.`,
-        "Cùng chuẩn bị đầy đủ sách vở, bút mực sẵn sàng khám phá.",
-        "Tiết học bám sát nội dung chương trình học cốt lõi."
+        `🎉 Chào mừng cả lớp đến với tiết học môn ${finalSubject} - lớp ${finalGrade}.`,
+        "🎒 Cùng chuẩn bị đầy đủ sách vở, bút mực sẵn sàng khám phá nhé!",
+        "✨ Tiết học bám sát nội dung chương trình học cốt lõi, vô cùng thú vị."
       ],
       illustrationPrompt: "None",
       illustrationStyleBase: "None",
@@ -1700,11 +1700,11 @@ app.post("/api/gemini/slides", async (req, res): Promise<any> => {
     slidesList.push({
       slideNumber: 2,
       part: "Mở đầu",
-      title: "HOẠT ĐỘNG KHỞI ĐỘNG (WARM-UP)",
+      title: "🎈 HOẠT ĐỘNG KHỞI ĐỘNG (WARM-UP) 🎈",
       points: [
-        "Kích hoạt tư duy và liên hệ kinh nghiệm thực tế của các con.",
-        "Cùng suy nghĩ và trả lời nhanh câu hỏi gợi mở từ thầy cô.",
-        "Tạo mối liên kết sinh động từ cuộc sống vào bài học mới."
+        "🤔 Kích hoạt tư duy và liên hệ kinh nghiệm thực tế của các con.",
+        "🙋 Cùng suy nghĩ và trả lời nhanh câu hỏi gợi mở từ thầy cô.",
+        "🌈 Tạo mối liên kết sinh động từ cuộc sống vào bài học mới."
       ],
       illustrationPrompt: "None",
       illustrationStyleBase: "None",
@@ -1722,11 +1722,11 @@ app.post("/api/gemini/slides", async (req, res): Promise<any> => {
     slidesList.push({
       slideNumber: 3,
       part: "Mở đầu",
-      title: "MỤC TIÊU BÀI HỌC CỐT LÕI",
+      title: "🎯 MỤC TIÊU BÀI HỌC CỐT LÕI 🎯",
       points: [
-        matchedDoc && matchedDoc.aiObjectives && matchedDoc.aiObjectives[0] ? matchedDoc.aiObjectives[0] : "Hiểu được kiến thức cơ bản cốt lõi của bài học hằng ngày.",
-        matchedDoc && matchedDoc.aiObjectives && matchedDoc.aiObjectives[1] ? matchedDoc.aiObjectives[1] : "Nâng cao năng lực tự học, làm việc nhóm và giải quyết vấn đề.",
-        "Hình thành thói quen rèn luyện, bảo vệ thiên nhiên và tôn trọng kỷ luật."
+        matchedDoc && matchedDoc.aiObjectives && matchedDoc.aiObjectives[0] ? `💡 ${matchedDoc.aiObjectives[0]}` : "💡 Hiểu được kiến thức cơ bản cốt lõi của bài học hằng ngày.",
+        matchedDoc && matchedDoc.aiObjectives && matchedDoc.aiObjectives[1] ? `🤝 ${matchedDoc.aiObjectives[1]}` : "🤝 Nâng cao năng lực tự học, làm việc nhóm và giải quyết vấn đề.",
+        "🌱 Hình thành thói quen rèn luyện, bảo vệ thiên nhiên và tôn trọng kỷ luật."
       ],
       illustrationPrompt: "None",
       illustrationStyleBase: "None",

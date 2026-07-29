@@ -236,12 +236,8 @@ export default function SlideGenerator({ user }: { user?: any } = {}) {
       .map(doc => doc.subject)
   )).filter(Boolean);
 
-  // Dynamic list of documents for current grade + subject
-  const availableDocs = sourceDocs.filter(
-    (doc) =>
-      mapGradeStringToNumber(doc.grade) === grade &&
-      (!subject || doc.subject === subject)
-  );
+  // Dynamic list of documents for current grade + subject (Modified: now shows all to prevent hiding documents)
+  const availableDocs = sourceDocs;
 
   // Handle document selection change
   const handleDocChange = (docId: string) => {
@@ -1213,7 +1209,7 @@ export default function SlideGenerator({ user }: { user?: any } = {}) {
 
             {/* Presentation Mockup viewport */}
             <div className={`rounded-2xl border-4 shadow-lg aspect-video p-6 flex flex-col justify-between relative overflow-hidden transition-all duration-300 ${
-              slideStyle === "modern" ? "bg-slate-950 border-slate-800 text-white bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950/40" :
+              slideStyle === "modern" ? "bg-sky-50 border-sky-200 text-slate-800 bg-gradient-to-br from-sky-100 via-indigo-50 to-pink-50" :
               slideStyle === "schoolboard" ? "bg-emerald-950 border-emerald-900 text-slate-100 bg-gradient-to-br from-emerald-950 to-teal-950" :
               "bg-amber-50 border-amber-200 text-slate-800 bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-100/20"
             }`}>
@@ -1236,18 +1232,18 @@ export default function SlideGenerator({ user }: { user?: any } = {}) {
                 {/* Bullets text */}
                 <div className="text-left space-y-4 max-w-2xl mx-auto w-full">
                   <h3 className={`font-extrabold text-lg tracking-tight leading-snug uppercase border-b pb-3 transition-all ${
-                    slideStyle === "modern" ? "text-amber-400 border-white/10" :
+                    slideStyle === "modern" ? "text-indigo-700 border-indigo-200" :
                     slideStyle === "schoolboard" ? "text-yellow-300 border-white/10 font-serif" :
                     "text-amber-900 border-amber-200"
                   }`}>
                     {activeSlide.title}
                   </h3>
                   <ul className={`space-y-2 text-xs md:text-sm pl-4 list-disc transition-all ${
-                    slideStyle === "playful" ? "text-slate-700" : "text-slate-100"
+                    slideStyle === "schoolboard" ? "text-slate-100" : "text-slate-700"
                   }`}>
                     {activeSlide.points.map((pt, i) => (
                       <li key={i} className={`leading-relaxed tracking-tight font-medium ${
-                        slideStyle === "playful" ? "text-slate-800" : "text-white/95"
+                        slideStyle === "schoolboard" ? "text-white/95" : "text-slate-800"
                       }`}>{pt}</li>
                     ))}
                   </ul>
@@ -1255,7 +1251,7 @@ export default function SlideGenerator({ user }: { user?: any } = {}) {
               </div>
 
               <div className={`text-center text-[10px] border-t pt-2 flex justify-between ${
-                slideStyle === "playful" ? "text-slate-500 border-slate-900/10" : "text-slate-400 border-white/5"
+                slideStyle === "schoolboard" ? "text-slate-400 border-white/5" : "text-slate-500 border-slate-900/10"
               }`}>
                 <span>Thương hiệu: EduAI 1.0</span>
                 <span>Tiến trình sư phạm chuẩn hóa bám sát Công văn 2345</span>
