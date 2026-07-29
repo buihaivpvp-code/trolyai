@@ -103,18 +103,21 @@ export default function AITestCreator({ user }: { user?: any } = {}) {
 
   // Load documents on mount to search for match context
   useEffect(() => {
-    try {
-      const key = user && user.id ? `eduai_documents_repo_${user.id}` : "eduai_documents_repo";
-      const stored = localStorage.getItem(key);
-      if (stored) {
-        const parsed = JSON.parse(stored) as DocumentItem[];
-        setRepoDocs(parsed);
-      } else {
+    const fetchDocs = async () => {
+      try {
+        const res = await apiFetch("/api/documents");
+        if (res.ok) {
+          const parsed = await res.json();
+          setRepoDocs(parsed);
+        } else {
+          setRepoDocs([]);
+        }
+      } catch (e) {
+        console.error("Error fetching repository:", e);
         setRepoDocs([]);
       }
-    } catch (e) {
-      console.error("Error reading repository:", e);
-    }
+    };
+    fetchDocs();
   }, [user]);
 
   // Update matched documents context whenever Grade/Subject change
