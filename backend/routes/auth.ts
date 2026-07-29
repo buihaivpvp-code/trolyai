@@ -195,54 +195,41 @@ router.post("/login", async (req, res, next) => {
     const { email, password, rememberMe } = req.body;
 
     if (!email) {
-      return res.status(400).json({ error: "Vui lòng nhập Email hoặc Mã số truy cập." });
+      return res.status(400).json({ error: "Vui lòng nhập địa chỉ Email." });
+    }
+    if (!password) {
+      return res.status(400).json({ error: "Vui lòng nhập mật khẩu." });
     }
 
     const inputClean = email.trim();
-    const isCode = /^\d{3,6}$/.test(inputClean);
 
     // Check if user exists in database first, if not, direct them to register
     await Database.refreshCacheFromSupabase(true);
     const users = Database.getUsers();
     
-    let existing = null;
-    if (isCode) {
-      existing = users.find((u) => u.teacherCode === inputClean);
-    } else {
-      existing = users.find((u) => u.email.toLowerCase() === inputClean.toLowerCase());
-    }
+    let existing = users.find((u) => u.email.toLowerCase() === inputClean.toLowerCase());
 
     if (!existing) {
       return res.status(404).json({
-        error: isCode
-          ? "Mã số truy cập này không hợp lệ hoặc chưa được đăng ký."
-          : "Tài khoản này chưa tồn tại trên hệ thống. Vui lòng chuyển sang tab Đăng ký để tạo tài khoản mới."
+        error: "Tài khoản này chưa tồn tại trên hệ thống. Vui lòng chuyển sang tab Đăng ký để tạo tài khoản mới."
       });
     }
 
-    let authUserId = existing.id;
-
-    if (!isCode) {
-      if (!password) {
-        return res.status(400).json({ error: "Vui lòng nhập mật khẩu." });
-      }
-
-      if (!isSupabaseConfigured()) {
-        return res.status(500).json({ error: "Supabase chưa được cấu hình trên máy chủ." });
-      }
-
-      const supabase = getSupabaseClient();
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: existing.email,
-        password
-      });
-
-      if (error || !data.user) {
-        Logger.error(`Supabase login failed for ${existing.email}: ${error?.message || "Unknown error"}`);
-        return res.status(401).json({ error: "Mật khẩu không chính xác. Vui lòng kiểm tra lại." });
-      }
-      authUserId = data.user.id;
+    if (!isSupabaseConfigured()) {
+      return res.status(500).json({ error: "Supabase chưa được cấu hình trên máy chủ." });
     }
+
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: existing.email,
+      password
+    });
+
+    if (error || !data.user) {
+      Logger.error(`Supabase login failed for ${existing.email}: ${error?.message || "Unknown error"}`);
+      return res.status(401).json({ error: "Mật khẩu không chính xác. Vui lòng kiểm tra lại." });
+    }
+    let authUserId = data.user.id;
 
     const localUser = buildLocalUserFromAuth({
       existingUser: existing,

@@ -109,7 +109,7 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
       }
 
       if (mode === "register") {
-        setSuccess(`Đăng ký thành công! Mã số truy cập của Thầy/Cô là: ${data.teacherCode}. Thầy/cô có thể đăng nhập bằng mã số này hoặc Email.`);
+        setSuccess("Đăng ký tài khoản thành công! Vui lòng đăng nhập để bắt đầu.");
         setPassword("");
         setMode("login");
         setLoading(false);
@@ -305,18 +305,14 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
 
               <div className="space-y-1.5">
                 <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">
-                  {mode === "register" ? "Địa chỉ Email:" : "Email hoặc Mã số truy cập:"}
+                  Địa chỉ Email:
                 </label>
                 <div className="relative">
-                  {mode === "register" ? (
-                    <Mail className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
-                  ) : (
-                    <User className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
-                  )}
+                  <Mail className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
                   <input
-                    type="text"
+                    type="email"
                     required
-                    placeholder={mode === "register" ? "giao-vien@ten-truong.edu.vn" : "Nhập Email hoặc Mã số (VD: 15982)"}
+                    placeholder="giao-vien@ten-truong.edu.vn"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full text-xs pl-10 pr-4 py-3 bg-slate-900 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-white placeholder-slate-500"
