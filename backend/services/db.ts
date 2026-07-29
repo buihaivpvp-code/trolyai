@@ -136,6 +136,7 @@ const initialUsers: UserSchema[] = [
 const seedStudents: any[] = [
   {
     id: "std-1",
+    ownerId: "usr-1",
     name: "Nguyễn Hoàng Nam",
     gender: "Nam",
     dob: "2016-08-15",
