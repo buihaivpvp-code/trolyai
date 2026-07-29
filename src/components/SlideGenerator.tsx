@@ -198,6 +198,18 @@ export default function SlideGenerator({ user }: { user?: any } = {}) {
             setTopic(cleanTopic || matchedDoc.name);
             setSelectedDocId(matchedDoc.id);
           }
+        } else if (!selectedDocId) {
+          // If subject matches but no document is selected, auto-select the first one
+          const matchedDoc = filteredDocs.find(d => d.subject === subject);
+          if (matchedDoc) {
+            const cleanTopic = matchedDoc.name
+              .replace(/^Giáo án\s+Toán\s+lớp\s+\d+\s*-\s*/i, "")
+              .replace(/^Giáo án\s+[\w\s]+\s+lớp\s+\d+\s*-\s*/i, "")
+              .replace(/^Sách giáo khoa\s+[\w\s]+\s+lớp\s+\d+\s*-\s*/i, "")
+              .split("(")[0].trim();
+            setTopic(cleanTopic || matchedDoc.name);
+            setSelectedDocId(matchedDoc.id);
+          }
         }
       }
     }
