@@ -186,6 +186,17 @@ router.post("/bulk", authenticateToken as any, async (req: AuthenticatedRequest,
         continue;
       }
 
+      // Kiểm tra trùng lặp: Nếu trùng Tên, Giới tính và Ngày sinh thì bỏ qua không nhập
+      const isDuplicate = currentStudents.some(s => 
+        s.name.trim().toLowerCase() === name.trim().toLowerCase() && 
+        s.gender === gender && 
+        s.dob === dob
+      );
+
+      if (isDuplicate) {
+        continue;
+      }
+
       const defaultAvatar = gender === "Nam" 
         ? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80"
         : "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80";
