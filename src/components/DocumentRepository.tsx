@@ -362,6 +362,7 @@ const getDocumentsStorageKey = (currentUser?: any | null) => {
 export default function DocumentRepository({ user }: { user?: any } = {}) {
   // State for document list (starts empty, saved in localStorage)
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [selectedForDelete, setSelectedForDelete] = useState<string[]>([]);
   
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState("");
@@ -1207,6 +1208,46 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
       } finally {
         setDeleteTarget(null);
       }
+    }
+  };
+
+  const toggleSelectForDelete = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedForDelete(prev => 
+      prev.includes(id) ? prev.filter(docId => docId !== id) : [...prev, id]
+    );
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    if (selectedForDelete.length === 0) return;
+    
+    const confirm = window.confirm(`Bạn có chắc chắn muốn xóa ${selectedForDelete.length} tài liệu đã chọn không?\nHành động này không thể hoàn tác.`);
+    if (!confirm) return;
+
+    try {
+      const deletePromises = selectedForDelete.map(id => 
+        apiFetch(`/api/documents/${id}`, { method: "DELETE" }).then(async res => {
+          if (res.ok) {
+             rawFilesMap.delete(id);
+             await deleteFileFromIndexedDB(id);
+          }
+        })
+      );
+      await Promise.all(deletePromises);
+      
+      const updated = documents.filter(d => !selectedForDelete.includes(d.id));
+      setDocuments(updated);
+      setSelectedForDelete([]);
+      
+      if (previewDoc && selectedForDelete.includes(previewDoc.id)) {
+        setPreviewDoc(null);
+      }
+      if (hoveredDoc && selectedForDelete.includes(hoveredDoc.id)) {
+        setHoveredDoc(null);
+      }
+    } catch (err) {
+      console.error("Lỗi khi xóa nhiều tài liệu:", err);
+      alert("Đã xảy ra lỗi khi xóa một số tài liệu. Vui lòng thử lại.");
     }
   };
 
@@ -2082,6 +2123,16 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
     return 0;
   });
 
+  const toggleSelectAll = () => {
+    if (selectedForDelete.length === filteredDocs.length && filteredDocs.length > 0) {
+      // Deselect all
+      setSelectedForDelete([]);
+    } else {
+      // Select all currently filtered
+      setSelectedForDelete(filteredDocs.map(d => d.id));
+    }
+  };
+
   return (
     <div className="space-y-6" id="document-repository-container">
       {/* 1. Header Hero section */}
@@ -2939,8 +2990,39 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                 </button>
               )}
 
+              {/* Bulk Delete Actions */}
+              {documents.length > 0 && (
+                <div className="flex items-center gap-2 border border-slate-200 rounded-lg p-0.5 ml-auto">
+                  <label className="flex items-center gap-1.5 px-2 py-1 text-[11px] font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 rounded-md">
+                    <input
+                      type="checkbox"
+                      className="rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
+                      checked={selectedForDelete.length > 0 && selectedForDelete.length === filteredDocs.length}
+                      ref={input => {
+                        if (input) {
+                          input.indeterminate = selectedForDelete.length > 0 && selectedForDelete.length < filteredDocs.length;
+                        }
+                      }}
+                      onChange={toggleSelectAll}
+                    />
+                    Chọn tất cả
+                  </label>
+                  
+                  {selectedForDelete.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleConfirmBulkDelete}
+                      className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Xóa {selectedForDelete.length} mục
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* View mode buttons */}
-              <div className="flex gap-1 border border-slate-200 rounded-lg p-0.5 ml-auto">
+              <div className="flex gap-1 border border-slate-200 rounded-lg p-0.5 ml-1">
                 <button
                   type="button"
                   onClick={() => setViewMode("grid")}
@@ -3019,7 +3101,16 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                       {/* Top content row */}
                       <div className="space-y-3">
                         <div className="flex justify-between items-start gap-3">
-                          {getFormatIcon(doc.fileExtension)}
+                          <div className="flex gap-2 items-start">
+                            <input
+                              type="checkbox"
+                              className="mt-1 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer flex-shrink-0"
+                              checked={selectedForDelete.includes(doc.id)}
+                              onChange={(e) => toggleSelectForDelete(doc.id, e as any)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            {getFormatIcon(doc.fileExtension)}
+                          </div>
                           <div className="flex flex-wrap gap-1 items-end justify-end max-w-[120px]">
                             {/* Class/Grade Badge */}
                             <span className="text-[9px] bg-slate-100 border border-slate-200/60 text-slate-600 font-bold px-1.5 py-0.5 rounded">
@@ -3129,6 +3220,13 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                       className="p-3.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 hover:bg-slate-50/75 cursor-pointer transition-colors text-left"
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <input
+                          type="checkbox"
+                          className="rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer flex-shrink-0"
+                          checked={selectedForDelete.includes(doc.id)}
+                          onChange={(e) => toggleSelectForDelete(doc.id, e as any)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
                         {getFormatIcon(doc.fileExtension)}
                         <div className="min-w-0 space-y-0.5">
                           <h4 className="text-xs font-black text-slate-800 truncate max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl">
