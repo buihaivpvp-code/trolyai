@@ -82,6 +82,14 @@ router.post("/register", async (req, res, next) => {
     const cleanName = name.trim();
     const cleanClassCode = classCode.toUpperCase().trim();
 
+    // Prevent duplicate registrations by checking if email already exists in database
+    await Database.refreshCacheFromSupabase(true);
+    const users = Database.getUsers();
+    const existing = users.find((u) => u.email.toLowerCase() === cleanEmail);
+    if (existing) {
+      return res.status(400).json({ error: "Email này đã được đăng ký trên hệ thống." });
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email: cleanEmail,
       password,
@@ -103,8 +111,7 @@ router.post("/register", async (req, res, next) => {
       return res.status(500).json({ error: "Đăng ký thành công nhưng không nhận được thông tin người dùng từ Supabase." });
     }
 
-    const users = Database.getUsers();
-    const existing = users.find((u) => u.email.toLowerCase() === cleanEmail);
+
 
     const localUser = buildLocalUserFromAuth({
       existingUser: existing,
@@ -154,6 +161,17 @@ router.post("/login", async (req, res, next) => {
     const supabase = getSupabaseClient();
     const cleanEmail = email.toLowerCase().trim();
 
+    // Check if user exists in database first, if not, direct them to register
+    await Database.refreshCacheFromSupabase(true);
+    const users = Database.getUsers();
+    const existing = users.find((u) => u.email.toLowerCase() === cleanEmail);
+
+    if (!existing) {
+      return res.status(404).json({
+        error: "Tài khoản này chưa tồn tại trên hệ thống. Vui lòng chuyển sang tab Đăng ký để tạo tài khoản mới."
+      });
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email: cleanEmail,
       password
@@ -161,11 +179,10 @@ router.post("/login", async (req, res, next) => {
 
     if (error || !data.user) {
       Logger.error(`Supabase login failed for ${cleanEmail}: ${error?.message || "Unknown error"}`);
-      return res.status(401).json({ error: "Email hoặc mật khẩu không chính xác." });
+      return res.status(401).json({ error: "Mật khẩu không chính xác. Vui lòng kiểm tra lại." });
     }
 
-    const users = Database.getUsers();
-    const existing = users.find((u) => u.email.toLowerCase() === cleanEmail);
+
 
     const localUser = buildLocalUserFromAuth({
       existingUser: existing,
