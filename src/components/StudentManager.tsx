@@ -51,6 +51,9 @@ export default function StudentManager({
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<"name" | "rank">("name");
+  
+  // Selection state for bulk actions
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
 
   // States for student details modal (3 modules)
   const [detailStudent, setDetailStudent] = useState<Student | null>(null);
@@ -509,10 +512,41 @@ export default function StudentManager({
 
       if (resp.ok) {
         showNotification(`Đã xóa học sinh ${name} khỏi danh sách lớp thành công.`);
+        // Remove from selection if deleted
+        if (selectedStudentIds.has(id)) {
+          const newSet = new Set(selectedStudentIds);
+          newSet.delete(id);
+          setSelectedStudentIds(newSet);
+        }
         fetchStudents();
         if (onStudentsChanged) onStudentsChanged();
       } else {
         showNotification("Lỗi xóa học sinh", "error");
+      }
+    } catch (e) {
+      showNotification("Không thể kết nối đến máy chủ", "error");
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedStudentIds.size === 0) return;
+    const confirmMsg = `Bạn có chắc chắn muốn xóa vĩnh viễn ${selectedStudentIds.size} học sinh đã chọn khỏi danh sách không?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const resp = await apiFetch("/api/students/bulk", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedStudentIds) })
+      });
+
+      if (resp.ok) {
+        showNotification(`Đã xóa thành công ${selectedStudentIds.size} học sinh.`);
+        setSelectedStudentIds(new Set());
+        fetchStudents();
+        if (onStudentsChanged) onStudentsChanged();
+      } else {
+        showNotification("Lỗi xóa hàng loạt", "error");
       }
     } catch (e) {
       showNotification("Không thể kết nối đến máy chủ", "error");
@@ -1213,13 +1247,24 @@ export default function StudentManager({
           <div className="bg-white rounded-2xl border border-slate-100 shadow-xs overflow-hidden">
             
             <div className="p-4 bg-slate-50/60 border-b border-slate-100 flex items-center justify-between flex-wrap gap-4">
-              <div className="space-y-1 text-left">
+              <div className="space-y-1 text-left flex-1">
                 <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm uppercase tracking-wider">
                   <Users className="w-4 h-4 text-indigo-500" />
                   SỔ LÝ LỊCH TRÍCH NGANG HÀNH CHÍNH ({students.length} học sinh)
                 </h3>
                 <p className="text-[11px] text-slate-500">✨ Nhấp vào <strong>tên học sinh</strong> để xem Học bạ & Đánh giá • Nhấp ✏️ để sửa lý lịch nhanh</p>
               </div>
+
+              {selectedStudentIds.size > 0 && (
+                <button
+                  type="button"
+                  onClick={handleBulkDelete}
+                  className="bg-rose-100 hover:bg-rose-200 text-rose-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Xóa {selectedStudentIds.size} học sinh
+                </button>
+              )}
 
               {/* Sorting Switcher */}
               <div className="flex items-center gap-1 bg-slate-200/50 p-1 rounded-xl shrink-0">
@@ -1261,7 +1306,21 @@ export default function StudentManager({
                 <table className="w-full text-left border-collapse text-xs" id="students-table">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 uppercase font-bold tracking-wider">
-                      <th className="py-3 px-4 w-12 text-center">Ảnh</th>
+                      <th className="py-3 px-4 w-10 text-center">
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer"
+                          checked={sortedStudents.length > 0 && selectedStudentIds.size === sortedStudents.length}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedStudentIds(new Set(sortedStudents.map(s => s.id)));
+                            } else {
+                              setSelectedStudentIds(new Set());
+                            }
+                          }}
+                        />
+                      </th>
+                      <th className="py-3 px-2 w-12 text-center">Ảnh</th>
                       <th className="py-3 px-4">Họ và Tên</th>
                       <th className="py-3 px-4 text-center w-24">Thứ hạng</th>
                       <th className="py-3 px-4 text-center w-28">ĐTB Môn học</th>
@@ -1278,11 +1337,29 @@ export default function StudentManager({
                       return (
                         <tr 
                           key={student.id} 
-                          className="hover:bg-slate-50/60 transition-colors align-middle"
+                          className={`hover:bg-slate-50/60 transition-colors align-middle ${selectedStudentIds.has(student.id) ? 'bg-indigo-50/30' : ''}`}
                           id={`row-student-${student.id}`}
                         >
+                          {/* Checkbox */}
+                          <td className="py-2.5 px-4 text-center">
+                            <input 
+                              type="checkbox" 
+                              className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer"
+                              checked={selectedStudentIds.has(student.id)}
+                              onChange={(e) => {
+                                const newSet = new Set(selectedStudentIds);
+                                if (e.target.checked) {
+                                  newSet.add(student.id);
+                                } else {
+                                  newSet.delete(student.id);
+                                }
+                                setSelectedStudentIds(newSet);
+                              }}
+                            />
+                          </td>
+
                           {/* Avatar */}
-                          <td className="py-2.5 px-3 text-center">
+                          <td className="py-2.5 px-2 text-center">
                             <img
                               referrerPolicy="no-referrer"
                               src={student.avatar}

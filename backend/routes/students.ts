@@ -239,6 +239,36 @@ router.post("/bulk", authenticateToken as any, async (req: AuthenticatedRequest,
 });
 
 /**
+ * @route DELETE /api/students/bulk
+ * @desc Delete multiple students
+ * @access Private (Teacher or Admin)
+ */
+router.delete("/bulk", authenticateToken as any, async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: "Vui lòng cung cấp danh sách ID học sinh cần xóa." });
+    }
+
+    const ownerId = req.user?.role === "admin" ? undefined : req.user?.id;
+    let currentStudents = Database.getStudents(ownerId);
+    
+    const initialCount = currentStudents.length;
+    currentStudents = currentStudents.filter(student => !ids.includes(student.id));
+    
+    if (currentStudents.length === initialCount) {
+      return res.status(404).json({ error: "Không tìm thấy học sinh nào để xóa hoặc không có quyền." });
+    }
+
+    await Database.saveStudents(currentStudents, ownerId);
+    Logger.warn(`Bulk deleted ${initialCount - currentStudents.length} students`);
+    res.json({ message: `Đã xóa thành công ${initialCount - currentStudents.length} học sinh.` });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * @route PUT /api/students/:id
  * @desc Update an existing student profile
  * @access Private (Teacher or Admin)
