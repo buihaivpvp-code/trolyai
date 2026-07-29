@@ -10,7 +10,8 @@ import path from "path";
 import { GoogleGenAI, Type } from "@google/genai";
 
 // Load environment variables
-dotenv.config();
+const envPath = fs.existsSync(".env.local") ? ".env.local" : ".env";
+dotenv.config({ path: envPath });
 
 // Import production-grade backend components
 import { Database } from "./backend/services/db.ts";

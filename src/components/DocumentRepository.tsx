@@ -943,13 +943,13 @@ export default function DocumentRepository({ user }: { user?: any } = {}) {
     if (lower === ".pdf") {
       return <div className="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center text-rose-600 font-bold text-xs">PDF</div>;
     }
-    if (lower === ".doc" || lower === ".docx") {
+    if ([".doc", ".docx", ".docm", ".dot", ".dotx", ".dotm", ".rtf"].includes(lower)) {
       return <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs">DOC</div>;
     }
-    if (lower === ".ppt" || lower === ".pptx") {
+    if ([".ppt", ".pptx", ".pptm", ".pps", ".ppsx", ".ppsm", ".pot", ".potx", ".potm"].includes(lower)) {
       return <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center text-amber-600 font-bold text-xs">PPT</div>;
     }
-    if (lower === ".xls" || lower === ".xlsx") {
+    if ([".xls", ".xlsx", ".xlsm", ".xlsb", ".xlt", ".xltx", ".xltm", ".csv"].includes(lower)) {
       return <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-xs">XLS</div>;
     }
     if ([".png", ".jpg", ".jpeg", ".gif", ".svg"].includes(lower)) {
@@ -2149,7 +2149,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                   ref={fileInputRef}
                   onChange={handleFileChange}
                   className="hidden"
-                  accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.mp4,.txt"
+                  accept=".pdf,.doc,.docx,.docm,.dot,.dotx,.dotm,.rtf,.ppt,.pptx,.pptm,.pps,.ppsx,.ppsm,.pot,.potx,.potm,.xls,.xlsx,.xlsm,.xlsb,.xlt,.xltx,.xltm,.csv,.png,.jpg,.jpeg,.mp4,.txt"
                 />
 
                 {selectedFile ? (
@@ -2471,7 +2471,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                   ref={fileInputRef}
                   onChange={handleFileChange}
                   className="hidden"
-                  accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.mp4,.txt"
+                  accept=".pdf,.doc,.docx,.docm,.dot,.dotx,.dotm,.rtf,.ppt,.pptx,.pptm,.pps,.ppsx,.ppsm,.pot,.potx,.potm,.xls,.xlsx,.xlsm,.xlsb,.xlt,.xltx,.xltm,.csv,.png,.jpg,.jpeg,.mp4,.txt"
                   multiple
                 />
 
@@ -3328,7 +3328,7 @@ III. GỢI Ý CÁC CÂU HỎI THẢO LUẬN TRONG TIẾT DẠY:
                               </div>
                             </div>
                           </div>
-                        ) : [".doc", ".xls", ".xlsx", ".ppt", ".pptx"].includes(previewDoc.fileExtension.toLowerCase()) ? (
+                        ) : [".doc", ".docm", ".dot", ".dotx", ".dotm", ".rtf", ".xls", ".xlsx", ".xlsm", ".xlsb", ".xlt", ".xltx", ".xltm", ".ppt", ".pptx", ".pptm", ".pps", ".ppsx", ".ppsm", ".pot", ".potx", ".potm"].includes(previewDoc.fileExtension.toLowerCase()) ? (
                           /* 2. OFFICE FILE DIRECT PREVIEW AND DOWNLOAD */
                           <div className="flex flex-col items-center justify-center p-8 bg-white border border-slate-200 rounded-2xl text-center space-y-4 my-8 shadow-xs">
                             <div className="p-4 bg-indigo-50 rounded-full text-indigo-600">

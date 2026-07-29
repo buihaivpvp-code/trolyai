@@ -34,13 +34,29 @@ function inferContentType(fileName: string): string {
   const lower = fileName.toLowerCase();
 
   if (lower.endsWith(".pdf")) return "application/pdf";
+  
   if (lower.endsWith(".doc")) return "application/msword";
   if (lower.endsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
   if (lower.endsWith(".docm")) return "application/vnd.ms-word.document.macroEnabled.12";
+  if (lower.endsWith(".dotx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.template";
+  if (lower.endsWith(".dotm")) return "application/vnd.ms-word.template.macroEnabled.12";
+  
   if (lower.endsWith(".xls")) return "application/vnd.ms-excel";
   if (lower.endsWith(".xlsx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  if (lower.endsWith(".xlsm")) return "application/vnd.ms-excel.sheet.macroEnabled.12";
+  if (lower.endsWith(".xlsb")) return "application/vnd.ms-excel.sheet.binary.macroEnabled.12";
+  if (lower.endsWith(".xltx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.template";
+  if (lower.endsWith(".xltm")) return "application/vnd.ms-excel.template.macroEnabled.12";
+  
   if (lower.endsWith(".ppt")) return "application/vnd.ms-powerpoint";
   if (lower.endsWith(".pptx")) return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+  if (lower.endsWith(".pptm")) return "application/vnd.ms-powerpoint.presentation.macroEnabled.12";
+  if (lower.endsWith(".ppsx")) return "application/vnd.openxmlformats-officedocument.presentationml.slideshow";
+  if (lower.endsWith(".ppsm")) return "application/vnd.ms-powerpoint.slideshow.macroEnabled.12";
+  if (lower.endsWith(".potx")) return "application/vnd.openxmlformats-officedocument.presentationml.template";
+  if (lower.endsWith(".potm")) return "application/vnd.ms-powerpoint.template.macroEnabled.12";
+  
+  if (lower.endsWith(".rtf")) return "application/rtf";
   if (lower.endsWith(".txt")) return "text/plain; charset=utf-8";
   if (lower.endsWith(".json")) return "application/json; charset=utf-8";
   if (lower.endsWith(".csv")) return "text/csv; charset=utf-8";
